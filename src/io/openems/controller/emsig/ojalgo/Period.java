@@ -27,6 +27,8 @@ public class Period {
 	public final String name;
 	public final EnergyGrid grid = new EnergyGrid();
 	public final EnergyStorage ess = new EnergyStorage();
+	public final PV pv = new PV();
+	public final HouseHold hh = new HouseHold();
 
 	private Period(String name) {
 		this.name = name;
