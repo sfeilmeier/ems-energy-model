@@ -12,7 +12,10 @@ import static io.openems.controller.emsig.ojalgo.Constants.GRID_SELL_REVENUE;
 import static io.openems.controller.emsig.ojalgo.Constants.MINUTES_PER_PERIOD;
 import static io.openems.controller.emsig.ojalgo.Constants.PV_POWER;
 import static io.openems.controller.emsig.ojalgo.Constants.HH_LOAD;
+import static io.openems.controller.emsig.ojalgo.Constants.ESS_CHARGE_EFFICIENCY;
+import static io.openems.controller.emsig.ojalgo.Constants.ESS_DISCHARGE_EFFICIENCY;
 import static io.openems.controller.emsig.ojalgo.Constants.NO_OF_PERIODS;
+
 
 import static java.math.BigDecimal.ONE;
 
@@ -62,37 +65,55 @@ public class EnergyModel {
 					.set(p.ess.discharge.power, ONE.negate()) //
 					.set(p.ess.charge.power, ONE) //
 					.level(0);
+			
+			// within a period, only charging XOR discharging is allowed
+			// the remaining constraints are formulated as target functions in EnergyApp.java
+//			p.ess.charge.mode = model.addVariable("ESS_" + p.name + "_Charge_Mode") //
+//					.lower(0) //
+//					.upper(1);
+//			p.ess.discharge.mode = model.addVariable("ESS_" + p.name + "_Discharge_Mode") //
+//					.lower(0) //
+//					.upper(1);
+//			model.addExpression("ESS_" + p.name + "_Charge_Mode_Expr") //
+//			.set(p.ess.charge.mode, ONE) //
+//			.set(p.ess.discharge.mode, ONE) //
+//			.level(1);
+			
 
 			// sum energy
+			//take the charge and discharge efficiency of the ESS into account
 			p.ess.energy = model.addVariable("ESS_" + p.name + "_Energy") //
 					.lower(ESS_MIN_ENERGY * 60 /* [Wmin] */) //
 					.upper(ESS_MAX_ENERGY * 60 /* [Wmin] */);
-			// ESS_INITIAL_ENERGY *60 = periods[0].ess.energy + period[0].ess.power*MINUTES_PER_PERIOD
+			// periods[0].ess.energy =  ESS_INITIAL_ENERGY *60 - period[0].ess.power*MINUTES_PER_PERIOD*ESS_EFFICIENCY
 			if (i == 0) {
-				model.addExpression("ESS_" + p.name + "_Energy_Expr_1st") //
+				model.addExpression("ESS_" + p.name + "_Energy_Expr_1st") // 
 						.set(p.ess.energy, ONE) //
-						.set(p.ess.power, MINUTES_PER_PERIOD) //
-						.level(ESS_INITIAL_ENERGY * 60);
+//						.set(p.ess.power, MINUTES_PER_PERIOD) //
+						.set(p.ess.charge.power, -1* MINUTES_PER_PERIOD*ESS_CHARGE_EFFICIENCY /100) //
+						.set(p.ess.discharge.power, MINUTES_PER_PERIOD*ESS_DISCHARGE_EFFICIENCY/100) //
+						.level(ESS_INITIAL_ENERGY*60); // 
 			} else {
-				model.addExpression("ESS_" + p.name + "_Energy_Expr") //
+				model.addExpression("ESS_" + p.name + "_Energy_Expr") // 
 						.set(periods[i - 1].ess.energy, ONE) //
-						.set(p.ess.power, MINUTES_PER_PERIOD * -1) //
+						.set(p.ess.discharge.power, MINUTES_PER_PERIOD * -1 * ESS_DISCHARGE_EFFICIENCY /100) //
+						.set(p.ess.charge.power, MINUTES_PER_PERIOD*ESS_CHARGE_EFFICIENCY /100) //
 						.set(p.ess.energy, ONE.negate()) //
-						.level(0);
+						.level(0); // ESS_EFFICIENCY
 			}
-			//  p.ess.energy = periods[i-1].ess.energy - p.ess.power*MINUTES_PER_PERIOD
+			//  p.ess.energy = periods[i-1].ess.energy - p.ess.power*MINUTES_PER_PERIOD - ESS_EFFICIENCY*60
 			
 			
 			/*
 			 * Grid
 			 */
-			// 0 = p.grid.power + p.ess.power 
+			// p.hh.power.cons - p.pv.power.prod = p.ess.power + p.grid.power
 			// 0 = p.grid.power - grid.buy.power + p.grid.sell.power 
 			p.grid.power = model.addVariable("Grid_" + p.name + "_Power"); //
-//			model.addExpression("Grid_" + p.name + "_Power_Expr") // TODO  why?
-//				.set(p.grid.power, ONE) //
-//				.set(p.ess.power, ONE) // add PV power and HH load?
-//				.level(0);
+			model.addExpression(p.name + "_Power_Balance") //
+			.set(p.ess.power, ONE) //
+			.set(p.grid.power, ONE) //
+			.level(p.hh.power.cons - p.pv.power.prod);
 			p.grid.buy.power = model.addVariable("Grid_" + p.name + "_Buy_Power") //
 					.lower(0) //
 					.upper(GRID_BUY_LIMIT);
@@ -108,33 +129,9 @@ public class EnergyModel {
 			p.grid.buy.cost = GRID_BUY_COST[i];
 			p.grid.sell.revenue = GRID_SELL_REVENUE[i];
 			
-			// TODO Grid-Sell can never be more than Production. This simple model assumes
-			// no production, so Grid-Sell must be zero - at least outside of potential HLZF periods.
-			// p.grid.sell.power.upper(0);
-			
-			// change the upper limit concerning grid sell
-			// p.grid.sell.power.upper(p.pv.power.prod);
-
-			
 	
 		}
 	}
-
-//	public void prettyPrint() {
-//		for (int i = 0; i < this.periods.length; i++) {
-//			Period p = this.periods[i];
-//			System.out.println(
-//					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f", i, //
-//							"Grid", p.grid.power.getValue().doubleValue(), //
-//							"GridBuy", p.grid.buy.power.getValue().doubleValue(), //
-//							"GridSell", p.grid.sell.power.getValue().doubleValue(), //
-//							"ESS", p.ess.power.getValue().doubleValue(), //
-//							"ESSCharge", p.ess.charge.power.getValue().doubleValue(), //
-//							"ESSDischarge", p.ess.discharge.power.getValue().doubleValue(), //
-//							"ESSEnergy", p.ess.energy.getValue().doubleValue() / 60 //
-//					));
-//		}
-//	}
 	
 	public void prettyPrint() {
 		for (int i = 0; i < this.periods.length; i++) {
@@ -150,6 +147,8 @@ public class EnergyModel {
 							"ESSEnergy", p.ess.energy.getValue().doubleValue() / 60, //
 							"PVPower", p.pv.power.prod, //
 							"HHLoad", p.hh.power.cons //
+							// "ChargeMode", p.ess.charge.mode.getValue().doubleValue(), //
+							// "DischargeMode", p.ess.discharge.mode.getValue().doubleValue()
 					));
 		}
 	}

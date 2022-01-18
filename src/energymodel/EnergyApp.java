@@ -1,17 +1,28 @@
 package energymodel;
 
-import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_ENERGY;
-import static io.openems.controller.emsig.ojalgo.Constants.GRID_SELL_LIMIT;
 import static java.math.BigDecimal.ONE;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.ojalgo.optimisation.Expression;
 import org.ojalgo.optimisation.Variable;
 
 import io.openems.controller.emsig.ojalgo.EnergyModel;
 import io.openems.controller.emsig.ojalgo.Period;
+
+import org.ojalgo.OjAlgoUtils;
+import org.ojalgo.RecoverableCondition;
+import org.ojalgo.matrix.Primitive64Matrix;
+import org.ojalgo.matrix.decomposition.QR;
+import org.ojalgo.matrix.store.ElementsSupplier;
+import org.ojalgo.matrix.store.MatrixStore;
+import org.ojalgo.matrix.store.PhysicalStore;
+import org.ojalgo.matrix.store.Primitive64Store;
+import org.ojalgo.matrix.task.InverterTask;
+import org.ojalgo.matrix.task.SolverTask;
 
 public class EnergyApp {
 
@@ -87,9 +98,9 @@ public class EnergyApp {
 		addScheduleConstraints(em);
 
 		// Grid Buy Cost
-		// gridBuyCostSumExpr. = 0 = -gridBuyCostSum + 
-		// \sum_{i = 1}^{periods.length} periods[i].grid.buy.power * periods[i].grid.buy.cost
-		
+		// gridBuyCostSumExpr. = 0 = -gridBuyCostSum +
+		// \sum_{i = 1}^{periods.length} periods[i].grid.buy.power *
+		// periods[i].grid.buy.cost
 		Variable gridBuyCostSum = em.model.addVariable("Grid_Buy_Cost_Sum");
 		Expression gridBuyCostSumExpr = em.model.addExpression("Grid_Buy_Cost_Sum_Expr") //
 				.set(gridBuyCostSum, ONE.negate());
@@ -99,9 +110,9 @@ public class EnergyApp {
 		gridBuyCostSumExpr.level(0);
 
 		// Grid Sell Revenue
-		// gridSellRevenueSumExpr. =  0 = - gridSellRevenueSum + 
-		// \sum_{i = 1}^{periods.length} periods[i].grid.sell.power * periods[i].grid.sell.revenue   
-		
+		// gridSellRevenueSumExpr. = 0 = - gridSellRevenueSum +
+		// \sum_{i = 1}^{periods.length} periods[i].grid.sell.power *
+		// periods[i].grid.sell.revenue
 		Variable gridSellRevenueSum = em.model.addVariable("Grid_Sell_Revenue_Sum");
 		Expression gridSellRevenueSumExpr = em.model.addExpression("Grid_Sell_Revenue_Sum_Expr") //
 				.set(gridSellRevenueSum, ONE.negate()); //
@@ -111,32 +122,61 @@ public class EnergyApp {
 		gridSellRevenueSumExpr.level(0);
 
 		// Target function: Grid Exchange Cost
-		
-		// New Constraint - Power Balance
-		// PV production, grid power, ess power, and HH load have to be in balance
-		// 0 = pv.power.prod + p.ess.power + p.grid.power - p.hh.power.cons
-				for (Period p : em.periods) {
-					System.out.println(p.name);
-				em.model.addExpression(p.name + "_Power_Balance") //
-//						.set(p.pv.power.prod, ONE) //
-						.set(p.ess.power, ONE) //
-						.set(p.grid.power, ONE) //
-//						.set(p.hh.power.cons, ONE.negate()) //
-						.level(p.hh.power.cons - p.pv.power.prod);	
-				}
-
-		
 		em.model.addExpression("Grid Exchange Cost Sum") //
 				.set(gridBuyCostSum, ONE) //
 				.set(gridSellRevenueSum, ONE.negate()) //
-				.weight(ONE);
+				.weight(1000);
 
 		// TODO additional target function: charge power should be evenly distributed;
-		// i.e. minimise squared error between last period and current period power
-		// proposal: instead of the maximum squared error, minimize the sum of all squared errors between
+		// i.e. minimize squared error between last period and current period power
+		// Instead of the maximum squared error, one can also minimize the sum of all
+		// squared errors between
 		// the (respective) last period and current period power:
-		// \sum_{i =1}^{em.periods.length} (em.periods[i].ess.power - em.periods[i-1].ess.power)^2		
+		// \sum_{i =1}^{em.periods.length} (em.periods[i].ess.power -
+		// em.periods[i-1].ess.power)^2
 		
+		
+		// decide whether the ESS is charged or discharged within a period
+		// introduce the charging state and allow Charge XOR Discharge
+		// since it is not possible to impose a constraint concerning the
+		// multiplication of two variables, we define this as an objective function
+		// with minimum value 0
+		// TODO runtime: an hour
+//		for (Period p : em.periods) {
+//		em.model.addExpression("ESS_" + p.name + "Charge_Constraint_Expr") //
+//				.set(p.ess.charge.mode, p.ess.discharge.power, 1.0) //
+//				.weight(1);
+//		em.model.addExpression("ESS_" + p.name + "Discharge_Constraint_Expr") //
+//				.set(p.ess.discharge.mode, p.ess.charge.power, 1.0) //
+//				.weight(1);	
+//
+//		}
+		// define NO_OF_PERIODS -1 additional variables and minimize
+		// the sum of their squares
+		//charDiff(i) = em.periods[i+1].ess.charge.power - em.periods[i].ess.charge.power
+		List<Variable> charDiffs = new ArrayList<>();
+		for (int i = 0; i < em.periods.length - 1; i++) {
+			Variable charDiff = em.model.addVariable("Charge_Diff_" + i); //
+			em.model.addExpression("Charge_Diff_" + i + "_Expr") //
+					.set(charDiff, ONE) //
+					.set(em.periods[i + 1].ess.charge.power, ONE.negate()) //
+					.set(em.periods[i].ess.charge.power, ONE) //
+					.level(0);
+			charDiffs.add(charDiff);
+		}
+		
+		// introduce an (em.periods.length) x (em.periods.length)-unit matrix to square the 
+		//charDiff-variables
+		
+		Primitive64Store identity = Primitive64Store.FACTORY.rows(new double[em.periods.length - 1][em.periods.length -1]); // 95
+				for (int i = 0; i < em.periods.length -1 ; i++) {
+					identity.add(i, i, 1);
+				};
+
+
+		Expression evenlyDistributedCharge = em.model.addExpression("Evenly Distributed Charge");
+			evenlyDistributedCharge.setQuadraticFactors(charDiffs, identity);
+		evenlyDistributedCharge.weight(ONE);
 
 		em.model.minimise();
 		// Result result = em.model.minimise();
@@ -178,9 +218,7 @@ public class EnergyApp {
 //		for (int i = 18; i < 23; i++) { // TODO why 18? 
 //			em.periods[i].grid.sell.power.upper(GRID_SELL_LIMIT);
 //		}
-//		
-		
-		
+//				
 	}
 
 }

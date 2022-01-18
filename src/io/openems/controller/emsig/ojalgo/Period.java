@@ -18,7 +18,7 @@ public class Period {
 
 		// Period of the day
 		final int minute = thisIndex * lengthInMinutes;
-		b.append(String.format("%02d", minute / 60));
+		b.append(String.format("%02d", minute / 60)); 
 		b.append(":");
 		b.append(String.format("%02d", minute % 60));
 		return new Period(b.toString());
