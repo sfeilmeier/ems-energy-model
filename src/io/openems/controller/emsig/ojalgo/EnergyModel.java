@@ -67,7 +67,6 @@ public class EnergyModel {
 					.level(0);
 			
 			// within a period, only charging XOR discharging is allowed
-			// the remaining constraints are formulated as target functions in EnergyApp.java
 //			p.ess.charge.mode = model.addVariable("ESS_" + p.name + "_Charge_Mode") //
 //					.lower(0) //
 //					.upper(1);
@@ -78,10 +77,18 @@ public class EnergyModel {
 //			.set(p.ess.charge.mode, ONE) //
 //			.set(p.ess.discharge.mode, ONE) //
 //			.level(1);
+//			model.addExpression("ESS_" + p.name + "Charge_Constraint_Expr") //
+//			.set(p.ess.charge.mode, p.ess.discharge.power, 1.0) //
+//			.level(0);
+//	em.model.addExpression("ESS_" + p.name + "Discharge_Constraint_Expr") //
+//			.set(p.ess.discharge.mode, p.ess.charge.power, 1.0) //
+//			.level(0);	
 			
 
 			// sum energy
-			//take the charge and discharge efficiency of the ESS into account
+			// take the charge and discharge efficiency of the ESS into account
+			// by doing so, it is less likely that the ESS both charges and discharges
+			// within a period, but it is not impossible
 			p.ess.energy = model.addVariable("ESS_" + p.name + "_Energy") //
 					.lower(ESS_MIN_ENERGY * 60 /* [Wmin] */) //
 					.upper(ESS_MAX_ENERGY * 60 /* [Wmin] */);
@@ -101,8 +108,8 @@ public class EnergyModel {
 						.set(p.ess.energy, ONE.negate()) //
 						.level(0); // ESS_EFFICIENCY
 			}
-			//  p.ess.energy = periods[i-1].ess.energy - p.ess.power*MINUTES_PER_PERIOD - ESS_EFFICIENCY*60
-			
+			//  p.ess.energy = periods[i-1].ess.energy - p.ess.power*MINUTES_PER_PERIOD - ESS_EFFICIENCY*60			
+
 			
 			/*
 			 * Grid

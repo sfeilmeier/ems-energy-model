@@ -6,13 +6,10 @@ public class EnergyStorage {
 
 	public static class Charge {
 		public Variable power = null;
-		//public Variable mode = null;
 	}
 
 	public static class Discharge {
 		public Variable power = null;
-		//public Variable mode = null;
-
 	}
 
 	public final Charge charge = new Charge();

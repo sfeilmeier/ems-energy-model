@@ -13,18 +13,22 @@ import org.ojalgo.optimisation.Variable;
 import io.openems.controller.emsig.ojalgo.EnergyModel;
 import io.openems.controller.emsig.ojalgo.Period;
 
-import org.ojalgo.OjAlgoUtils;
-import org.ojalgo.RecoverableCondition;
-import org.ojalgo.matrix.Primitive64Matrix;
-import org.ojalgo.matrix.decomposition.QR;
-import org.ojalgo.matrix.store.ElementsSupplier;
-import org.ojalgo.matrix.store.MatrixStore;
-import org.ojalgo.matrix.store.PhysicalStore;
+//import org.ojalgo.OjAlgoUtils;
+//import org.ojalgo.RecoverableCondition;
+//import org.ojalgo.matrix.Primitive64Matrix;
+//import org.ojalgo.matrix.decomposition.QR;
+//import org.ojalgo.matrix.store.ElementsSupplier;
+//import org.ojalgo.matrix.store.MatrixStore;
+//import org.ojalgo.matrix.store.PhysicalStore;
 import org.ojalgo.matrix.store.Primitive64Store;
-import org.ojalgo.matrix.task.InverterTask;
-import org.ojalgo.matrix.task.SolverTask;
+//import org.ojalgo.matrix.task.InverterTask;
+//import org.ojalgo.matrix.task.SolverTask;
+
+import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_ENERGY;
+import static io.openems.controller.emsig.ojalgo.Constants.NO_OF_PERIODS;
 
 public class EnergyApp {
+
 
 	public static void main(String[] args) {
 		Instant now = Instant.now();
@@ -127,20 +131,26 @@ public class EnergyApp {
 				.set(gridSellRevenueSum, ONE.negate()) //
 				.weight(1000);
 
-		// TODO additional target function: charge power should be evenly distributed;
-		// i.e. minimize squared error between last period and current period power
+		// Additional target function: charge power should be evenly distributed,
+		// i.e., minimize squared error between last period and current period power (||.||_{\infty}).
 		// Instead of the maximum squared error, one can also minimize the sum of all
 		// squared errors between
-		// the (respective) last period and current period power:
+		// the (respective) last period and current period power (||.||_2):
 		// \sum_{i =1}^{em.periods.length} (em.periods[i].ess.power -
-		// em.periods[i-1].ess.power)^2
+		// em.periods[i-1].ess.power)^2.
+		// Note that we have the following norm equivalence (for all x \in R^{NO_OF_PERIODS-1}):
+		// ||x||_{\infty} <= ||x||_2 <= \sqrt{NO_OF_PERIODS -1} ||x||_{\infty}.
+		// In particular, 1/(\sqrt{NO_OF_PERIODS -1}) ||x||_2 <= ||x||_{\infty}.
+		// Hence, one might weight the resulting target function with/by (?)
+		// 1/(\sqrt{NO_OF_PERIODS -1}).
+		// By doing so, that target function is bounded by [0, (ESS_MAX_CHARGE)^2] 
 		
 		
-		// decide whether the ESS is charged or discharged within a period
-		// introduce the charging state and allow Charge XOR Discharge
-		// since it is not possible to impose a constraint concerning the
-		// multiplication of two variables, we define this as an objective function
-		// with minimum value 0
+		// Decide whether the ESS is charged or discharged within a period.
+		// Introduce the charging and discharging mode and allow charge XOR discharge.
+		// Since it is not possible (yet) to impose a constraint concerning the
+		// multiplication of two variables ("quadratic constraint"), we define this as an
+		// additional target function with minimum value 0.
 		// TODO runtime: an hour
 //		for (Period p : em.periods) {
 //		em.model.addExpression("ESS_" + p.name + "Charge_Constraint_Expr") //
@@ -151,6 +161,8 @@ public class EnergyApp {
 //				.weight(1);	
 //
 //		}
+		
+		
 		// define NO_OF_PERIODS -1 additional variables and minimize
 		// the sum of their squares
 		//charDiff(i) = em.periods[i+1].ess.charge.power - em.periods[i].ess.charge.power
@@ -168,15 +180,17 @@ public class EnergyApp {
 		// introduce an (em.periods.length) x (em.periods.length)-unit matrix to square the 
 		//charDiff-variables
 		
-		Primitive64Store identity = Primitive64Store.FACTORY.rows(new double[em.periods.length - 1][em.periods.length -1]); // 95
-				for (int i = 0; i < em.periods.length -1 ; i++) {
+		Primitive64Store identity = Primitive64Store.FACTORY.rows(new double[NO_OF_PERIODS- 1][NO_OF_PERIODS -1]); // 95
+				for (int i = 0; i < NO_OF_PERIODS -1 ; i++) {
 					identity.add(i, i, 1);
 				};
 
-
+		// To BOUND this target function by the square of the maximum charge difference
+		// use .weight(1/Math.sqrt(NO_OF_PERIODS -1)).
 		Expression evenlyDistributedCharge = em.model.addExpression("Evenly Distributed Charge");
 			evenlyDistributedCharge.setQuadraticFactors(charDiffs, identity);
-		evenlyDistributedCharge.weight(ONE);
+		//	evenlyDistributedCharge.weight(ONE);
+			evenlyDistributedCharge.weight(1/Math.sqrt(NO_OF_PERIODS -1));
 
 		em.model.minimise();
 		// Result result = em.model.minimise();
@@ -200,12 +214,12 @@ public class EnergyApp {
 //				.set(em.periods[5].ess.energy, ONE) // alternatively periods[20]
 //				.level(0);
 //
-//		// At beginning of HLZF^2 battery must be full
-//		em.model.addExpression("Beginning of 2nd HLZF") //
-//				.set(em.periods[15].ess.energy, ONE) // alternatively periods[60]
-//				.level(ESS_MAX_ENERGY * 60); // in Wmin
+//		// At beginning of HLZF battery must xy% full
+//			em.model.addExpression("Beginning of HLZF") //
+//				.set(em.periods[95].ess.energy, ONE) // alternatively periods[60]
+//				.level(ESS_MAX_ENERGY * 60 *70/100); // in Wmin
 //
-//		// At end of HLZF2 battery is expected to be empty
+//		// At end of HLZF2< battery is expected to be empty
 //		em.model.addExpression("End of 2nd HLZF") //
 //				.set(em.periods[23].ess.energy, ONE) // alternatively periods[92]
 //				.level(0);
