@@ -1,22 +1,24 @@
 package io.openems.controller.emsig.ojalgo;
 
-import org.ojalgo.optimisation.Variable;
+import org.chocosolver.solver.variables.BoolVar;
+import org.chocosolver.solver.variables.IntVar;
 
 public class EnergyStorage {
 
 	public static class Charge {
-		public Variable power = null;
+		public IntVar power = null;
 	}
 
 	public static class Discharge {
-		public Variable power = null;
+		public IntVar power = null;
 	}
 
 	public final Charge charge = new Charge();
 	public final Charge discharge = new Charge();
 
-	public Variable power = null;
-	public Variable energy = null;
+	public IntVar power = null;
+	public IntVar energy = null;
+	public BoolVar isCharge;
 
 	public EnergyStorage() {
 	}

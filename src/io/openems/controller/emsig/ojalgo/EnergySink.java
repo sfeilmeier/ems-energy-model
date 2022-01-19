@@ -1,11 +1,11 @@
 package io.openems.controller.emsig.ojalgo;
 
-import org.ojalgo.optimisation.Variable;
+import org.chocosolver.solver.variables.IntVar;
 
 public class EnergySink {
 
-	public Variable power = null;
-	public Variable energy = null;
-	public Variable value = null;
+	public IntVar power = null;
+	public IntVar energy = null;
+	public IntVar value = null;
 
 }

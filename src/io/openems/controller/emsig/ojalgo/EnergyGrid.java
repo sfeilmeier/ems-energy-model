@@ -1,24 +1,25 @@
 package io.openems.controller.emsig.ojalgo;
 
-import org.ojalgo.optimisation.Variable;
+import org.chocosolver.solver.variables.BoolVar;
+import org.chocosolver.solver.variables.IntVar;
 
 public class EnergyGrid {
 
 	public static class Buy {
-		public Variable power = null;
-		public double cost;
+		public IntVar power = null;
+		public int cost;
 	}
 
 	public static class Sell {
-		public Variable power = null;
-		public double revenue;
+		public IntVar power = null;
+		public int revenue;
 	}
 
 	public final Sell sell = new Sell();
 	public final Buy buy = new Buy();
 
-	public Variable power;
-	public Variable isBuy;
+	public IntVar power;
+	public BoolVar isBuy;
 
 	public EnergyGrid() {
 

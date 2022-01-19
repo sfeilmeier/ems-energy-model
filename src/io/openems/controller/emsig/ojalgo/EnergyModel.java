@@ -11,12 +11,12 @@ import static io.openems.controller.emsig.ojalgo.Constants.GRID_SELL_LIMIT;
 import static io.openems.controller.emsig.ojalgo.Constants.GRID_SELL_REVENUE;
 import static io.openems.controller.emsig.ojalgo.Constants.MINUTES_PER_PERIOD;
 import static io.openems.controller.emsig.ojalgo.Constants.NO_OF_PERIODS;
-import static java.math.BigDecimal.ONE;
 
 import java.awt.Color;
 import java.io.IOException;
 
-import org.ojalgo.optimisation.ExpressionsBasedModel;
+import org.chocosolver.solver.Model;
+import org.chocosolver.solver.Solution;
 
 import com.github.plot.Plot;
 import com.github.plot.Plot.AxisFormat;
@@ -24,11 +24,11 @@ import com.github.plot.Plot.Data;
 
 public class EnergyModel {
 
-	public final ExpressionsBasedModel model;
+	public final Model model;
 	public final Period[] periods;
 
 	public EnergyModel() {
-		model = new ExpressionsBasedModel();
+		model = new Model();
 
 		// Initialize Periods
 		this.periods = new Period[NO_OF_PERIODS];
@@ -39,95 +39,82 @@ public class EnergyModel {
 			/*
 			 * Energy Storage
 			 */
-			p.ess.power = model.addVariable("ESS_" + p.name + "_Power") //
-					.lower(ESS_MAX_CHARGE * -1) //
-					.upper(ESS_MAX_DISCHARGE);
-			p.ess.discharge.power = model.addVariable("ESS_" + p.name + "_Discharge_Power") //
-					.lower(0) //
-					.upper(ESS_MAX_DISCHARGE);
-			p.ess.charge.power = model.addVariable("ESS_" + p.name + "_Charge_Power") //
-					.lower(0) //
-					.upper(ESS_MAX_CHARGE);
-			model.addExpression("ESS_" + p.name + "_ChargeDischargePower_Expr") //
-					.set(p.ess.power, ONE) //
-					.set(p.ess.discharge.power, ONE.negate()) //
-					.set(p.ess.charge.power, ONE) //
-					.level(0);
+			p.ess.power = model.intVar("ESS_" + p.name + "_Power", ESS_MAX_CHARGE * -1, ESS_MAX_DISCHARGE); //
+			p.ess.discharge.power = model.intVar("ESS_" + p.name + "_Discharge_Power", 0, ESS_MAX_DISCHARGE);
+			p.ess.charge.power = model.intVar("ESS_" + p.name + "_Charge_Power", 0, ESS_MAX_CHARGE);
+			p.ess.isCharge = model.boolVar();
+			model.ifThenElse(p.ess.isCharge, //
+					model.arithm(p.ess.charge.power, "=", model.intScaleView(p.ess.power, -1)), //
+					model.arithm(p.ess.charge.power, "=", 0)); //
+			model.ifThenElse(p.ess.isCharge, //
+					model.arithm(p.ess.discharge.power, "=", 0), //
+					model.arithm(p.ess.discharge.power, "=", p.ess.power));
 
 			// sum energy
-			p.ess.energy = model.addVariable("ESS_" + p.name + "_Energy") //
-					.lower(ESS_MIN_ENERGY * 60 /* [Wm] */) //
-					.upper(ESS_MAX_ENERGY * 60 /* [Wm] */);
+			p.ess.energy = model.intVar("ESS_" + p.name + "_Energy", ESS_MIN_ENERGY * 60 /* [Wm] */,
+					ESS_MAX_ENERGY * 60 /* [Wm] */);
 
 			if (i == 0) {
-				model.addExpression("ESS_" + p.name + "_Energy_Expr_1st") //
-						.set(p.ess.energy, ONE) //
-						.set(p.ess.power, MINUTES_PER_PERIOD) //
-						.level(ESS_INITIAL_ENERGY * 60);
+				model.arithm(p.ess.energy, "+", model.intScaleView(p.ess.power, MINUTES_PER_PERIOD), "=",
+						ESS_INITIAL_ENERGY * 60);
 			} else {
-				model.addExpression("ESS_" + p.name + "_Energy_Expr") //
-						.set(periods[i - 1].ess.energy, ONE) //
-						.set(p.ess.power, MINUTES_PER_PERIOD * -1) //
-						.set(p.ess.energy, ONE.negate()) //
-						.level(0);
+				model.arithm(p.ess.energy, "-", model.intScaleView(p.ess.power, MINUTES_PER_PERIOD), "=",
+						periods[i - 1].ess.energy);
 			}
 
 			/*
 			 * Grid
 			 */
-			p.grid.power = model.addVariable("Grid_" + p.name + "_Power"); //
-			model.addExpression("Grid_" + p.name + "_Power_Expr") //
-					.set(p.grid.power, ONE) //
-					.set(p.ess.power, ONE) //
-					.level(0);
-			p.grid.buy.power = model.addVariable("Grid_" + p.name + "_Buy_Power") //
-					.lower(0) //
-					.upper(GRID_BUY_LIMIT);
-			p.grid.sell.power = model.addVariable("Grid_" + p.name + "_Sell_Power") //
-					.lower(0) //
-					.upper(GRID_SELL_LIMIT);
-			model.addExpression("Grid_" + p.name + "_BuySellPower_Expr") //
-					.set(p.grid.power, ONE) //
-					.set(p.grid.buy.power, ONE.negate()) //
-					.set(p.grid.sell.power, ONE) //
-					.level(0);
+			p.grid.power = model.intVar("Grid_" + p.name + "_Power", GRID_SELL_LIMIT * -1, GRID_BUY_LIMIT); //
+
+			p.grid.buy.power = model.intVar("Grid_" + p.name + "_Buy_Power", 0, GRID_BUY_LIMIT);
+			p.grid.sell.power = model.intVar("Grid_" + p.name + "_Sell_Power", 0, GRID_SELL_LIMIT);
+			p.grid.isBuy = model.boolVar();
+			model.ifThenElse(p.grid.isBuy, //
+					model.arithm(p.grid.buy.power, "=", p.grid.power), //
+					model.arithm(p.grid.buy.power, "=", 0)); //
+			model.ifThenElse(p.grid.isBuy, //
+					model.arithm(p.grid.sell.power, "=", 0), //
+					model.arithm(p.grid.sell.power, "=", model.intScaleView(p.grid.power, -1)));
 
 			// TODO Grid-Sell can never be more than Production. This simple model assumes
 			// no production, so Grid-Sell must be zero - at least outside of HLZF period.
-			p.grid.sell.power.upper(0);
+//			p.grid.sell.power.upper(0);
 
 			p.grid.buy.cost = GRID_BUY_COST[i];
 			p.grid.sell.revenue = GRID_SELL_REVENUE[i];
+
+			// Power-System formula
+			model.arithm(p.grid.power, "+", p.ess.power, "=", 0);
 		}
 	}
 
-	public void prettyPrint() {
+	public void prettyPrint(Solution s) {
 		for (int i = 0; i < this.periods.length; i++) {
 			Period p = this.periods[i];
-			System.out.println(
-					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f", i, //
-							"Grid", p.grid.power.getValue().doubleValue(), //
-							"GridBuy", p.grid.buy.power.getValue().doubleValue(), //
-							"GridSell", p.grid.sell.power.getValue().doubleValue(), //
-							"ESS", p.ess.power.getValue().doubleValue(), //
-							"ESSCharge", p.ess.charge.power.getValue().doubleValue(), //
-							"ESSDischarge", p.ess.discharge.power.getValue().doubleValue(), //
-							"ESSEnergy", p.ess.energy.getValue().doubleValue() / 60 //
-					));
+			System.out.println(String.format("%2d | %s %5d | %s %5d | %s %5d | %s %5d | %s %5d | %s %5d | %s %5d", i, //
+					"Grid", s.getIntVal(p.grid.power), //
+					"GridBuy", s.getIntVal(p.grid.buy.power), //
+					"GridSell", s.getIntVal(p.grid.sell.power), //
+					"ESS", s.getIntVal(p.ess.power), //
+					"ESSCharge", s.getIntVal(p.ess.charge.power), //
+					"ESSDischarge", s.getIntVal(p.ess.discharge.power), //
+					"ESSEnergy", s.getIntVal(p.ess.energy) / 60 //
+			));
 		}
 	}
 
-	public void plot(EnergyModel schedule) {
+	public void plot(Solution s) {
 		Data gridBuy = Plot.data();
 		Data gridSell = Plot.data();
 		Data essCharge = Plot.data();
 		Data essDischarge = Plot.data();
 		for (int i = 0; i < this.periods.length; i++) {
 			Period p = this.periods[i];
-			gridBuy.xy(i, p.grid.buy.power.getValue().doubleValue());
-			gridSell.xy(i, p.grid.sell.power.getValue().doubleValue());
-			essCharge.xy(i, p.ess.charge.power.getValue().doubleValue());
-			essDischarge.xy(i, p.ess.discharge.power.getValue().doubleValue());
+			gridBuy.xy(i, s.getIntVal(p.grid.buy.power));
+			gridSell.xy(i, s.getIntVal(p.grid.sell.power));
+			essCharge.xy(i, s.getIntVal(p.ess.charge.power));
+			essDischarge.xy(i, s.getIntVal(p.ess.discharge.power));
 		}
 
 		Plot plot = Plot.plot(//
