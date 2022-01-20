@@ -26,6 +26,9 @@ import org.ojalgo.matrix.store.Primitive64Store;
 
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_ENERGY;
 import static io.openems.controller.emsig.ojalgo.Constants.NO_OF_PERIODS;
+//import static io.openems.controller.emsig.ojalgo.Constants.EV_INITIAL_ENERGY;
+//import static io.openems.controller.emsig.ojalgo.Constants.EV_MAX_ENERGY;
+//import static io.openems.controller.emsig.ojalgo.Constants.EV_REQUIRED_ENERGY;
 
 public class EnergyApp {
 
@@ -191,6 +194,18 @@ public class EnergyApp {
 			evenlyDistributedCharge.setQuadraticFactors(charDiffs, identity);
 		//	evenlyDistributedCharge.weight(ONE);
 			evenlyDistributedCharge.weight(1/Math.sqrt(NO_OF_PERIODS -1));
+			
+			
+		// New constraint: the EV is supposed to be charged with EV_REQUIRED_ENERGY at least,
+		// and with EV_MAX_ENERGY - EV_INITIAL_ENERGY at most
+		// TODO Problem: runtime (almost 10 minutes)
+//			Expression minRequiredCharge = em.model.addExpression("Minimum_Required_Charging");
+//				for (Period p : em.periods) {
+//					minRequiredCharge.set(p.ev.energy, ONE);
+//				}
+//			//	minRequiredCharge.lower(EV_REQUIRED_ENERGY * 60);
+//			//	minRequiredCharge.upper((EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60);
+//				minRequiredCharge.level(EV_REQUIRED_ENERGY * 60);
 
 		em.model.minimise();
 		// Result result = em.model.minimise();

@@ -15,6 +15,14 @@ import static io.openems.controller.emsig.ojalgo.Constants.HH_LOAD;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_CHARGE_EFFICIENCY;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_DISCHARGE_EFFICIENCY;
 import static io.openems.controller.emsig.ojalgo.Constants.NO_OF_PERIODS;
+//import static io.openems.controller.emsig.ojalgo.Constants.EV_INITIAL_ENERGY;
+//import static io.openems.controller.emsig.ojalgo.Constants.EV_MAX_ENERGY;
+//import static io.openems.controller.emsig.ojalgo.Constants.EV_REQUIRED_ENERGY;
+//import static io.openems.controller.emsig.ojalgo.Constants.EV_MIN_CHARGE;
+//import static io.openems.controller.emsig.ojalgo.Constants.EV_MAX_CHARGE;
+//import static io.openems.controller.emsig.ojalgo.Constants.EV_CHARGE_EFFICIENCY;
+
+
 
 
 import static java.math.BigDecimal.ONE;
@@ -110,16 +118,49 @@ public class EnergyModel {
 			}
 			//  p.ess.energy = periods[i-1].ess.energy - p.ess.power*MINUTES_PER_PERIOD - ESS_EFFICIENCY*60			
 
+			/*
+			 * EV 
+			 */
+			// EV power
+			// For now, we impose no assumptions
+//			p.ev.charge.power = model.addVariable("EV_" + p.name + "_Charge_Power") //
+//					.lower(0) //
+//					.upper(EV_MAX_CHARGE);
+//			
+			// EV mode
+			// either allow no charge power (if charge mode = 0) or allow
+			// a charge power in [EV_MIN_CHARGE, EV_MAX_CHARGE] 
+			// TODO will probably fail, since the mode takes values between 0 and 1 as well
+//			p.ev.charge.mode = model.addVariable("EV_" + p.name + "_Charge_Mode") //
+//					.lower(0) //
+//					.upper(1);
+//			model.addExpression("EV_" + p.name + "_Charge_Mode_Expr") //
+//				.set(p.ev.charge.mode, EV_MAX_CHARGE) //
+//				.set(p.ev.charge.power, ONE) //
+//				.lower(EV_MIN_CHARGE) //
+//				.upper(EV_MAX_CHARGE);
 			
+					
+			// EV energy
+			// p.ev.energy = p.ev.charge.power*MINUTES_PER_PERIODS
+			// In particular, assume a minimum charge power of 100
+//			p.ev.energy = model.addVariable("EV_" + p.name + "Energy") //
+//					.lower(0) //
+//					.upper(EV_MAX_ENERGY * 60); // [Wmin]
+//			model.addExpression(p.name + "Energy") //
+//				.set(p.ev.energy, ONE) //
+//				.set(p.ev.charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
+//				.level(0);
 			/*
 			 * Grid
 			 */
-			// p.hh.power.cons - p.pv.power.prod = p.ess.power + p.grid.power
+			// p.hh.power.cons - p.pv.power.prod = p.ess.power + p.grid.power - p.ev.power
 			// 0 = p.grid.power - grid.buy.power + p.grid.sell.power 
 			p.grid.power = model.addVariable("Grid_" + p.name + "_Power"); //
 			model.addExpression(p.name + "_Power_Balance") //
 			.set(p.ess.power, ONE) //
 			.set(p.grid.power, ONE) //
+		//	.set(p.ev.charge.power, ONE.negate())
 			.level(p.hh.power.cons - p.pv.power.prod);
 			p.grid.buy.power = model.addVariable("Grid_" + p.name + "_Buy_Power") //
 					.lower(0) //
@@ -153,9 +194,8 @@ public class EnergyModel {
 							"ESSDischarge", p.ess.discharge.power.getValue().doubleValue(), //
 							"ESSEnergy", p.ess.energy.getValue().doubleValue() / 60, //
 							"PVPower", p.pv.power.prod, //
-							"HHLoad", p.hh.power.cons //
-							// "ChargeMode", p.ess.charge.mode.getValue().doubleValue(), //
-							// "DischargeMode", p.ess.discharge.mode.getValue().doubleValue()
+							"HHLoad", p.hh.power.cons//
+							//"EVPower", p.ev.charge.power.getValue().doubleValue()
 					));
 		}
 	}
