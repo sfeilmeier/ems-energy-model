@@ -9,12 +9,12 @@ public class EV {
 
 	public static class Charge {
 		public IntVar power = null;
-		// public IntVar mode = null; maybe BoolVar
 	}
 	
 	public final Charge charge = new Charge();
 	
 	public IntVar energy = null;
+	public BoolVar isCharged;
 	
 	public EV() {
 		

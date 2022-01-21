@@ -3,10 +3,13 @@ package energymodel;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_ENERGY;
 import static io.openems.controller.emsig.ojalgo.Constants.GRID_SELL_LIMIT;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_ENERGY;
+import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_CHARGE;
 import static io.openems.controller.emsig.ojalgo.Constants.NO_OF_PERIODS;
-//import static io.openems.controller.emsig.ojalgo.Constants.EV_INITIAL_ENERGY;
-//import static io.openems.controller.emsig.ojalgo.Constants.EV_MAX_ENERGY;
-//import static io.openems.controller.emsig.ojalgo.Constants.EV_REQUIRED_ENERGY;
+import static io.openems.controller.emsig.ojalgo.Constants.EV_INITIAL_ENERGY;
+import static io.openems.controller.emsig.ojalgo.Constants.EV_MAX_ENERGY;
+import static io.openems.controller.emsig.ojalgo.Constants.EV_REQUIRED_ENERGY;
+
+import static org.chocosolver.solver.search.strategy.Search.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -132,7 +135,7 @@ public class EnergyApp {
 //				gridSellRevenueSumExpr.level(0);
 
 		// Target function: Grid Exchange Cost
-		var gridExchangeCost = em.model.intVar("Grid Exchange Cost Sum", -10000000, 10000000 /* TODO */);
+		var gridExchangeCost = em.model.intVar("Grid Exchange Cost Sum", -10000, 10000 /* TODO */);
 		em.model.arithm(gridBuyCostSum, "-", gridSellRevenueSum, "=", gridExchangeCost).post();
 		
 		// cf. ojAlgo
@@ -141,52 +144,62 @@ public class EnergyApp {
 //						.set(gridBuyCostSum, ONE) //
 //						.set(gridSellRevenueSum, ONE.negate()) //
 //						.weight(1000);
-
-		// TODO additional target function: charge power should be evenly distributed;
-		// i.e. minimise squared error between last period and current period power
 		
-		// to maximize X
-		// model.setObjective(Model.MAXIMIZE, X);
-		// or model.setObjective(Model.MINIMIZE, X); to minimize X
-
-		Solver solver = em.model.getSolver();
-		Solution best = solver.findOptimalSolution(gridExchangeCost, false);
-		// Result result = em.model.minimise();
-		System.out.println("solver.solve(): " + solver.solve());
-		return best;
+		// New constraint: the EV is supposed to be charged throughout the day
+		// with EV_REQUIRED_ENERGY at least,
+		// and with EV_MAX_ENERGY - EV_INITIAL_ENERGY at most
+		// 
+//		var evChargeEnergies = new IntVar[em.periods.length];
+//		for (int i = 0; i < em.periods.length; i++) {
+//			Period p = em.periods[i];
+//			evChargeEnergies[i] = p.ev.energy;
+//		}
+//		var evChargeEnergiesSum = em.model.sum("EV_Charge_Energies_Sum", evChargeEnergies);
+//		
+//		em.model.arithm(evChargeEnergiesSum, ">=", EV_REQUIRED_ENERGY*60).post();
+//		em.model.arithm(evChargeEnergiesSum, "<=", (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60).post();
+		
+		em.model.arithm(em.periods[NO_OF_PERIODS-1].ev.energy, ">=", EV_REQUIRED_ENERGY*60).post();
 		
 		// cf. ojAlgo
+//		Expression minRequiredCharge = em.model.addExpression("Minimum_Required_Charging");
+//		for (Period p : em.periods) {
+//			minRequiredCharge.set(p.ev.energy, ONE);
+//		}
+//	//	minRequiredCharge.lower(EV_REQUIRED_ENERGY * 60);
+//	//	minRequiredCharge.upper((EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60);
+//		minRequiredCharge.level(EV_REQUIRED_ENERGY * 60);
+		
 		// Additional target function: charge power should be evenly distributed,
-				// i.e., minimize squared error between last period and current period power (||.||_{\infty}).
-				// Instead of the maximum squared error, one can also minimize the sum of all
-				// squared errors between
-				// the (respective) last period and current period power (||.||_2):
-				// \sum_{i =1}^{em.periods.length} (em.periods[i].ess.power -
-				// em.periods[i-1].ess.power)^2.
-				// Note that we have the following norm equivalence (for all x \in R^{NO_OF_PERIODS-1}):
-				// ||x||_{\infty} <= ||x||_2 <= \sqrt{NO_OF_PERIODS -1} ||x||_{\infty}.
-				// In particular, 1/(\sqrt{NO_OF_PERIODS -1}) ||x||_2 <= ||x||_{\infty}.
-				// Hence, one might weight the resulting target function with/by (?)
-				// 1/(\sqrt{NO_OF_PERIODS -1}).
-				// By doing so, that target function is bounded by [0, (ESS_MAX_CHARGE)^2] 
-				
-				
-				// Decide whether the ESS is charged or discharged within a period.
-				// Introduce the charging and discharging mode and allow charge XOR discharge.
-				// Since it is not possible (yet) to impose a constraint concerning the
-				// multiplication of two variables ("quadratic constraint"), we define this as an
-				// additional target function with minimum value 0.
-				// TODO runtime: an hour
-//				for (Period p : em.periods) {
-//				em.model.addExpression("ESS_" + p.name + "Charge_Constraint_Expr") //
-//						.set(p.ess.charge.mode, p.ess.discharge.power, 1.0) //
-//						.weight(1);
-//				em.model.addExpression("ESS_" + p.name + "Discharge_Constraint_Expr") //
-//						.set(p.ess.discharge.mode, p.ess.charge.power, 1.0) //
-//						.weight(1);	
-		//
-//				}
-				
+		// i.e., minimize squared error between last period and current period power (||.||_{\infty}).
+		// Instead of the maximum squared error, one can also minimize the sum of all
+		// squared errors between
+		// the (respective) last period and current period power (||.||_2):
+		// \sum_{i =1}^{em.periods.length} (em.periods[i].ess.power -
+		// em.periods[i-1].ess.power)^2.
+		// Note that we have the following norm equivalence (for all x \in R^{NO_OF_PERIODS-1}):
+		// ||x||_{\infty} <= ||x||_2 <= \sqrt{NO_OF_PERIODS -1} ||x||_{\infty}.
+		// In particular, 1/(\sqrt{NO_OF_PERIODS -1}) ||x||_2 <= ||x||_{\infty}.
+		// Hence, one might weight the resulting target function with/by (?)
+		// 1/(\sqrt{NO_OF_PERIODS -1}).
+		// By doing so, that target function is bounded by [0, (ESS_MAX_CHARGE)^2] 
+		
+		//charDiffs TODO does not work
+//		var charDiffs = new IntVar[em.periods.length - 1];
+//		for (int i = 0; i < em.periods.length - 1; i++) {
+//			em.model.arithm(em.periods[i+1].ess.charge.power, "-", em.periods[i].ess.charge.power, "=", charDiffs[i]).post();
+//			 charDiffs[i].sqr();
+//		}
+//		var charDiffSum = em.model.sum("Char_Diff_Sum", charDiffs);
+		
+
+		Solver solver = em.model.getSolver();
+		solver.limitTime("180s");
+		 Solution best = solver.findOptimalSolution(gridExchangeCost, false);
+		 System.out.println(gridExchangeCost);
+//		Solution best = solver.findOptimalSolution(charDiffSum, false);
+//		System.out.println(charDiffSum);
+		return best;
 				
 				// define NO_OF_PERIODS -1 additional variables and minimize
 				// the sum of their squares
@@ -216,17 +229,6 @@ public class EnergyApp {
 //				//	evenlyDistributedCharge.weight(ONE);
 //					evenlyDistributedCharge.weight(1/Math.sqrt(NO_OF_PERIODS -1));
 					
-					
-				// New constraint: the EV is supposed to be charged with EV_REQUIRED_ENERGY at least,
-				// and with EV_MAX_ENERGY - EV_INITIAL_ENERGY at most
-				// TODO Problem: runtime (almost 10 minutes)
-//					Expression minRequiredCharge = em.model.addExpression("Minimum_Required_Charging");
-//						for (Period p : em.periods) {
-//							minRequiredCharge.set(p.ev.energy, ONE);
-//						}
-//					//	minRequiredCharge.lower(EV_REQUIRED_ENERGY * 60);
-//					//	minRequiredCharge.upper((EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60);
-//						minRequiredCharge.level(EV_REQUIRED_ENERGY * 60);
 
 //				em.model.minimise();
 				// Result result = em.model.minimise();
@@ -245,7 +247,7 @@ public class EnergyApp {
 		 * Schedule-Constraints for HLZF Controller
 		 */
 
-		// At end of HLZF battery is expected to be empty
+//		// At end of HLZF battery is expected to be empty
 //		em.model.arithm(em.periods[5].ess.energy, "=", 0).post();
 //
 //		// At beginning of HLZF battery must be full

@@ -10,24 +10,24 @@ public class Constants {
 	/**
 	 * Grid Feed-In Limit, e.g. 70 % law
 	 */
-	public final static int GRID_SELL_LIMIT = 30000;
-	public final static int GRID_BUY_LIMIT = 30000;
+	public final static int GRID_SELL_LIMIT = 3000;
+	public final static int GRID_BUY_LIMIT = 3000;
 
-	public final static int ESS_INITIAL_ENERGY = 5000; // [Wh]
+	public final static int ESS_INITIAL_ENERGY = 300; // [Wh]
 	public final static int ESS_MIN_ENERGY = 0; // [Wh]
-	public final static int ESS_MAX_ENERGY = 12000; // [Wh] Fems4: 44000
-	public final static int ESS_MAX_CHARGE = 9000; // [W]
-	public final static int ESS_MAX_DISCHARGE = 9000; // [W]
-	public final static int ESS_CHARGE_EFFICIENCY = 95; // [%, 0-100] 
-	public final static int ESS_DISCHARGE_EFFICIENCY = 100; // [%, 100-200] 
+	public final static int ESS_MAX_ENERGY = 1200; // [Wh] Fems4: 44000
+	public final static int ESS_MAX_CHARGE = 900; // [W]
+	public final static int ESS_MAX_DISCHARGE = 900; // [W]
+	public final static int ESS_CHARGE_EFFICIENCY = 90; // [%, 0-100] 
+	public final static int ESS_DISCHARGE_EFFICIENCY = 110; // [%, 100-200] 
 	
 	// Consider an electric vehicle (EV) as an additional load
-//	public final static int EV_INITIAL_ENERGY = 500; // [Wh] TODO
-//	public final static int EV_MAX_ENERGY = 1000; // [Wh]
-//	public final static int EV_REQUIRED_ENERGY = 400; // [Wh] 
-//	public final static int EV_MIN_CHARGE = 100; // [W] 
-//	public final static int EV_MAX_CHARGE = 500; // [W]
-//	public final static int EV_CHARGE_EFFICIENCY = 90; // [%, 0-100]
+	public final static int EV_INITIAL_ENERGY = 5; // [Wh] TODO
+	public final static int EV_MAX_ENERGY = 15; // [Wh]
+	public final static int EV_REQUIRED_ENERGY = 9; // [Wh] 
+	public final static int EV_MIN_CHARGE = 2; // [W] 
+	public final static int EV_MAX_CHARGE = 5; // [W]
+	public final static int EV_CHARGE_EFFICIENCY = 90; // [%, 0-100]
 	
 	// TODO EV charging
 	//  EV charging processes can be specified by their
@@ -47,8 +47,12 @@ public class Constants {
 	// TODO time-varying charge pricing	
 //		public final static int[] GRID_BUY_COST = { ... };
 
-	public final static int[] PV_POWER = {0, 0, 0, 0, 0, 0, 0, 50, 60, 70, 100, 150, 300, 300, 200, 100, 50, 50, 0, 0, 0, 0, 0, 0};
-	public final static int[] HH_LOAD = {100, 100, 100, 100, 100, 100, 150, 150, 200, 300, 200, 250, 200, 200, 150, 150, 200, 150, 100, 100, 100, 100, 100, 100};
+		public final static int[] PV_POWER = {0, 0, 0, 0, 0, 0, 0, 5, 6, 7, 10, 15, 30, 30, 20, 10, 5, 5, 0, 0, 0, 0, 0, 0};
+		public final static int[] HH_LOAD = {10, 10, 10, 10, 10, 10, 15, 15, 20, 30, 20, 25, 20, 20, 15, 15, 20, 15, 10, 10, 10, 10, 10, 10};
+		
+//	public final static int[] PV_POWER = {0, 0, 0, 0, 0, 0, 0, 50, 60, 70, 100, 150, 300, 300, 200, 100, 50, 50, 0, 0, 0, 0, 0, 0};
+//	public final static int[] HH_LOAD = {100, 100, 100, 100, 100, 100, 150, 150, 200, 300, 200, 250, 200, 200, 150, 150, 200, 150, 100, 100, 100, 100, 100, 100};
+//	public final static int[] HH_LOAD = {1000, 1000, 1000, 500, 500, 500, 350, 350, 300, 300, 300, 350, 400, 400, 450, 450, 500, 550, 1000, 1000, 1000, 1000, 1000, 1000};
 	
 	// add PV, assume (for now) constant production
 //	public final static int PV_POWER_CONST = 70; // [W]
