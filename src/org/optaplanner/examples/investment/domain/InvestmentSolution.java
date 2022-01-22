@@ -31,156 +31,148 @@ import org.optaplanner.core.api.domain.valuerange.ValueRangeProvider;
 import org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore;
 import org.optaplanner.examples.common.domain.AbstractPersistable;
 import org.optaplanner.examples.investment.domain.util.InvestmentNumericUtil;
-import org.optaplanner.persistence.xstream.api.score.buildin.hardsoftlong.HardSoftLongScoreXStreamConverter;
-
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamConverter;
 
 @PlanningSolution
-@XStreamAlias("InvestmentSolution")
 public class InvestmentSolution extends AbstractPersistable {
 
-    private InvestmentParametrization parametrization;
-    private List<Region> regionList;
-    private List<Sector> sectorList;
-    private List<AssetClass> assetClassList;
+	private InvestmentParametrization parametrization;
+	private List<Region> regionList;
+	private List<Sector> sectorList;
+	private List<AssetClass> assetClassList;
 
-    private List<AssetClassAllocation> assetClassAllocationList;
+	private List<AssetClassAllocation> assetClassAllocationList;
 
-    @XStreamConverter(HardSoftLongScoreXStreamConverter.class)
-    private HardSoftLongScore score;
+	private HardSoftLongScore score;
 
-    @ProblemFactProperty
-    public InvestmentParametrization getParametrization() {
-        return parametrization;
-    }
+	@ProblemFactProperty
+	public InvestmentParametrization getParametrization() {
+		return parametrization;
+	}
 
-    public void setParametrization(InvestmentParametrization parametrization) {
-        this.parametrization = parametrization;
-    }
+	public void setParametrization(InvestmentParametrization parametrization) {
+		this.parametrization = parametrization;
+	}
 
-    @ProblemFactCollectionProperty
-    public List<Region> getRegionList() {
-        return regionList;
-    }
+	@ProblemFactCollectionProperty
+	public List<Region> getRegionList() {
+		return regionList;
+	}
 
-    public void setRegionList(List<Region> regionList) {
-        this.regionList = regionList;
-    }
+	public void setRegionList(List<Region> regionList) {
+		this.regionList = regionList;
+	}
 
-    @ProblemFactCollectionProperty
-    public List<Sector> getSectorList() {
-        return sectorList;
-    }
+	@ProblemFactCollectionProperty
+	public List<Sector> getSectorList() {
+		return sectorList;
+	}
 
-    public void setSectorList(List<Sector> sectorList) {
-        this.sectorList = sectorList;
-    }
+	public void setSectorList(List<Sector> sectorList) {
+		this.sectorList = sectorList;
+	}
 
-    @ProblemFactCollectionProperty
-    public List<AssetClass> getAssetClassList() {
-        return assetClassList;
-    }
+	@ProblemFactCollectionProperty
+	public List<AssetClass> getAssetClassList() {
+		return assetClassList;
+	}
 
-    public void setAssetClassList(List<AssetClass> assetClassList) {
-        this.assetClassList = assetClassList;
-    }
+	public void setAssetClassList(List<AssetClass> assetClassList) {
+		this.assetClassList = assetClassList;
+	}
 
-    @PlanningEntityCollectionProperty
-    public List<AssetClassAllocation> getAssetClassAllocationList() {
-        return assetClassAllocationList;
-    }
+	@PlanningEntityCollectionProperty
+	public List<AssetClassAllocation> getAssetClassAllocationList() {
+		return assetClassAllocationList;
+	}
 
-    public void setAssetClassAllocationList(List<AssetClassAllocation> assetClassAllocationList) {
-        this.assetClassAllocationList = assetClassAllocationList;
-    }
+	public void setAssetClassAllocationList(List<AssetClassAllocation> assetClassAllocationList) {
+		this.assetClassAllocationList = assetClassAllocationList;
+	}
 
-    @PlanningScore
-    public HardSoftLongScore getScore() {
-        return score;
-    }
+	@PlanningScore
+	public HardSoftLongScore getScore() {
+		return score;
+	}
 
-    public void setScore(HardSoftLongScore score) {
-        this.score = score;
-    }
+	public void setScore(HardSoftLongScore score) {
+		this.score = score;
+	}
 
-    // ************************************************************************
-    // Complex methods
-    // ************************************************************************
+	// ************************************************************************
+	// Complex methods
+	// ************************************************************************
 
-    @ValueRangeProvider(id = "quantityMillisRange")
-    public CountableValueRange<Long> getQuantityMillisRange() {
-        return ValueRangeFactory.createLongValueRange(0L, InvestmentNumericUtil.MAXIMUM_QUANTITY_MILLIS + 1L);
-    }
+	@ValueRangeProvider(id = "quantityMillisRange")
+	public CountableValueRange<Long> getQuantityMillisRange() {
+		return ValueRangeFactory.createLongValueRange(0L, InvestmentNumericUtil.MAXIMUM_QUANTITY_MILLIS + 1L);
+	}
 
-    /**
-     * Not incremental.
-     */
-    public long calculateExpectedReturnMicros() {
-        long expectedReturnMicros = 0L;
-        for (AssetClassAllocation allocation : assetClassAllocationList) {
-            expectedReturnMicros += allocation.getQuantifiedExpectedReturnMicros();
-        }
-        return expectedReturnMicros;
-    }
+	/**
+	 * Not incremental.
+	 */
+	public long calculateExpectedReturnMicros() {
+		long expectedReturnMicros = 0L;
+		for (AssetClassAllocation allocation : assetClassAllocationList) {
+			expectedReturnMicros += allocation.getQuantifiedExpectedReturnMicros();
+		}
+		return expectedReturnMicros;
+	}
 
-    /**
-     * Not incremental.
-     */
-    public long calculateStandardDeviationMicros() {
-        long squaredFemtos = calculateStandardDeviationSquaredFemtos();
-        return (long) Math.sqrt(squaredFemtos / 1000L);
-    }
+	/**
+	 * Not incremental.
+	 */
+	public long calculateStandardDeviationMicros() {
+		long squaredFemtos = calculateStandardDeviationSquaredFemtos();
+		return (long) Math.sqrt(squaredFemtos / 1000L);
+	}
 
-    /**
-     * Not incremental.
-     */
-    public long calculateStandardDeviationSquaredFemtos() {
-        long totalFemtos = 0L;
-        for (AssetClassAllocation a : assetClassAllocationList) {
-            for (AssetClassAllocation b : assetClassAllocationList) {
-                if (a == b) {
-                    totalFemtos += a.getQuantifiedStandardDeviationRiskMicros() * b.getQuantifiedStandardDeviationRiskMicros()
-                            * 1000L;
-                } else {
-                    // Matches twice: once for (A, B) and once for (B, A)
-                    long correlationMillis = a.getAssetClass().getCorrelationMillisMap().get(b.getAssetClass());
-                    totalFemtos += a.getQuantifiedStandardDeviationRiskMicros() * b.getQuantifiedStandardDeviationRiskMicros()
-                            * correlationMillis;
-                }
-            }
-        }
-        return totalFemtos;
-    }
+	/**
+	 * Not incremental.
+	 */
+	public long calculateStandardDeviationSquaredFemtos() {
+		long totalFemtos = 0L;
+		for (AssetClassAllocation a : assetClassAllocationList) {
+			for (AssetClassAllocation b : assetClassAllocationList) {
+				if (a == b) {
+					totalFemtos += a.getQuantifiedStandardDeviationRiskMicros()
+							* b.getQuantifiedStandardDeviationRiskMicros() * 1000L;
+				} else {
+					// Matches twice: once for (A, B) and once for (B, A)
+					long correlationMillis = a.getAssetClass().getCorrelationMillisMap().get(b.getAssetClass());
+					totalFemtos += a.getQuantifiedStandardDeviationRiskMicros()
+							* b.getQuantifiedStandardDeviationRiskMicros() * correlationMillis;
+				}
+			}
+		}
+		return totalFemtos;
+	}
 
-    public Map<Region, Long> calculateRegionQuantityMillisTotalMap() {
-        Map<Region, Long> totalMap = new HashMap<>(regionList.size());
-        for (Region region : regionList) {
-            totalMap.put(region, 0L);
-        }
-        for (AssetClassAllocation allocation : assetClassAllocationList) {
-            Long quantityMillis = allocation.getQuantityMillis();
-            if (quantityMillis != null) {
-                totalMap.put(allocation.getRegion(),
-                        totalMap.get(allocation.getRegion()) + quantityMillis);
-            }
-        }
-        return totalMap;
-    }
+	public Map<Region, Long> calculateRegionQuantityMillisTotalMap() {
+		Map<Region, Long> totalMap = new HashMap<>(regionList.size());
+		for (Region region : regionList) {
+			totalMap.put(region, 0L);
+		}
+		for (AssetClassAllocation allocation : assetClassAllocationList) {
+			Long quantityMillis = allocation.getQuantityMillis();
+			if (quantityMillis != null) {
+				totalMap.put(allocation.getRegion(), totalMap.get(allocation.getRegion()) + quantityMillis);
+			}
+		}
+		return totalMap;
+	}
 
-    public Map<Sector, Long> calculateSectorQuantityMillisTotalMap() {
-        Map<Sector, Long> totalMap = new HashMap<>(regionList.size());
-        for (Sector sector : sectorList) {
-            totalMap.put(sector, 0L);
-        }
-        for (AssetClassAllocation allocation : assetClassAllocationList) {
-            Long quantityMillis = allocation.getQuantityMillis();
-            if (quantityMillis != null) {
-                totalMap.put(allocation.getSector(),
-                        totalMap.get(allocation.getSector()) + quantityMillis);
-            }
-        }
-        return totalMap;
-    }
+	public Map<Sector, Long> calculateSectorQuantityMillisTotalMap() {
+		Map<Sector, Long> totalMap = new HashMap<>(regionList.size());
+		for (Sector sector : sectorList) {
+			totalMap.put(sector, 0L);
+		}
+		for (AssetClassAllocation allocation : assetClassAllocationList) {
+			Long quantityMillis = allocation.getQuantityMillis();
+			if (quantityMillis != null) {
+				totalMap.put(allocation.getSector(), totalMap.get(allocation.getSector()) + quantityMillis);
+			}
+		}
+		return totalMap;
+	}
 
 }

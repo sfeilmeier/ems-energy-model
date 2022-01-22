@@ -1,673 +1,673 @@
-<InvestmentSolution id="1">
+<org.optaplanner.examples.investment.domain.InvestmentSolution id="1">
   <id>0</id>
   <parametrization id="2">
     <id>0</id>
-    <standardDeviationMillisMaximum>150</standardDeviationMillisMaximum>
+    <standardDeviationMillisMaximum>73</standardDeviationMillisMaximum>
   </parametrization>
   <regionList id="3">
-    <Region id="4">
+    <org.optaplanner.examples.investment.domain.Region id="4">
       <id>0</id>
       <name>Global</name>
       <quantityMillisMaximum>1000</quantityMillisMaximum>
-    </Region>
+    </org.optaplanner.examples.investment.domain.Region>
   </regionList>
   <sectorList id="5">
-    <Sector id="6">
+    <org.optaplanner.examples.investment.domain.Sector id="6">
       <id>0</id>
       <name>Tech</name>
       <quantityMillisMaximum>300</quantityMillisMaximum>
-    </Sector>
-    <Sector id="7">
+    </org.optaplanner.examples.investment.domain.Sector>
+    <org.optaplanner.examples.investment.domain.Sector id="7">
       <id>1</id>
       <name>Cars</name>
       <quantityMillisMaximum>1000</quantityMillisMaximum>
-    </Sector>
-    <Sector id="8">
+    </org.optaplanner.examples.investment.domain.Sector>
+    <org.optaplanner.examples.investment.domain.Sector id="8">
       <id>2</id>
       <name>Food</name>
-      <quantityMillisMaximum>400</quantityMillisMaximum>
-    </Sector>
+      <quantityMillisMaximum>40</quantityMillisMaximum>
+    </org.optaplanner.examples.investment.domain.Sector>
   </sectorList>
   <assetClassList id="9">
-    <AssetClass id="10">
+    <org.optaplanner.examples.investment.domain.AssetClass id="10">
       <id>1</id>
       <name>Red Hat, Inc.</name>
       <region reference="4"/>
       <sector reference="6"/>
-      <expectedReturnMillis>136</expectedReturnMillis>
-      <standardDeviationRiskMillis>291</standardDeviationRiskMillis>
-      <correlationMillisMap class="linked-hash-map" id="11">
+      <expectedReturnMillis>1365</expectedReturnMillis>
+      <standardDeviationRiskMillis>2913</standardDeviationRiskMillis>
+      <correlationMillisMap id="11">
         <entry>
-          <AssetClass reference="10"/>
-          <long>0</long>
-        </entry>
-        <entry>
-          <AssetClass id="12">
-            <id>2</id>
-            <name>Google Inc.</name>
+          <org.optaplanner.examples.investment.domain.AssetClass id="12">
+            <id>5</id>
+            <name>Microsoft Corporation</name>
             <region reference="4"/>
             <sector reference="6"/>
-            <expectedReturnMillis>156</expectedReturnMillis>
-            <standardDeviationRiskMillis>215</standardDeviationRiskMillis>
-            <correlationMillisMap class="linked-hash-map" id="13">
+            <expectedReturnMillis>1798</expectedReturnMillis>
+            <standardDeviationRiskMillis>2070</standardDeviationRiskMillis>
+            <correlationMillisMap id="13">
               <entry>
-                <AssetClass reference="10"/>
-                <long>50</long>
-              </entry>
-              <entry>
-                <AssetClass reference="12"/>
+                <org.optaplanner.examples.investment.domain.AssetClass reference="12"/>
                 <long>0</long>
               </entry>
               <entry>
-                <AssetClass id="14">
-                  <id>3</id>
-                  <name>Oracle Corporation</name>
+                <org.optaplanner.examples.investment.domain.AssetClass id="14">
+                  <id>9</id>
+                  <name>General Motors Company</name>
                   <region reference="4"/>
                   <sector reference="6"/>
-                  <expectedReturnMillis>123</expectedReturnMillis>
-                  <standardDeviationRiskMillis>217</standardDeviationRiskMillis>
-                  <correlationMillisMap class="linked-hash-map" id="15">
+                  <expectedReturnMillis>210</expectedReturnMillis>
+                  <standardDeviationRiskMillis>2959</standardDeviationRiskMillis>
+                  <correlationMillisMap id="15">
                     <entry>
-                      <AssetClass reference="10"/>
-                      <long>600</long>
+                      <org.optaplanner.examples.investment.domain.AssetClass reference="12"/>
+                      <long>32</long>
                     </entry>
                     <entry>
-                      <AssetClass reference="12"/>
-                      <long>50</long>
-                    </entry>
-                    <entry>
-                      <AssetClass reference="14"/>
+                      <org.optaplanner.examples.investment.domain.AssetClass reference="14"/>
                       <long>0</long>
                     </entry>
                     <entry>
-                      <AssetClass id="16">
-                        <id>4</id>
-                        <name>Apple Inc.</name>
+                      <org.optaplanner.examples.investment.domain.AssetClass id="16">
+                        <id>10</id>
+                        <name>Starbucks Corporation</name>
                         <region reference="4"/>
-                        <sector reference="6"/>
-                        <expectedReturnMillis>288</expectedReturnMillis>
-                        <standardDeviationRiskMillis>241</standardDeviationRiskMillis>
-                        <correlationMillisMap class="linked-hash-map" id="17">
+                        <sector reference="8"/>
+                        <expectedReturnMillis>3321</expectedReturnMillis>
+                        <standardDeviationRiskMillis>1974</standardDeviationRiskMillis>
+                        <correlationMillisMap id="17">
                           <entry>
-                            <AssetClass reference="10"/>
-                            <long>130</long>
+                            <org.optaplanner.examples.investment.domain.AssetClass reference="12"/>
+                            <long>17</long>
                           </entry>
                           <entry>
-                            <AssetClass reference="12"/>
-                            <long>260</long>
+                            <org.optaplanner.examples.investment.domain.AssetClass reference="14"/>
+                            <long>30</long>
                           </entry>
                           <entry>
-                            <AssetClass reference="14"/>
-                            <long>190</long>
-                          </entry>
-                          <entry>
-                            <AssetClass reference="16"/>
+                            <org.optaplanner.examples.investment.domain.AssetClass reference="16"/>
                             <long>0</long>
                           </entry>
                           <entry>
-                            <AssetClass id="18">
-                              <id>5</id>
-                              <name>Microsoft Corporation</name>
+                            <org.optaplanner.examples.investment.domain.AssetClass id="18">
+                              <id>11</id>
+                              <name>McDonald&apos;s Corporation</name>
                               <region reference="4"/>
-                              <sector reference="6"/>
-                              <expectedReturnMillis>179</expectedReturnMillis>
-                              <standardDeviationRiskMillis>207</standardDeviationRiskMillis>
-                              <correlationMillisMap class="linked-hash-map" id="19">
+                              <sector reference="8"/>
+                              <expectedReturnMillis>805</expectedReturnMillis>
+                              <standardDeviationRiskMillis>1134</standardDeviationRiskMillis>
+                              <correlationMillisMap id="19">
                                 <entry>
-                                  <AssetClass reference="10"/>
-                                  <long>140</long>
+                                  <org.optaplanner.examples.investment.domain.AssetClass reference="12"/>
+                                  <long>16</long>
                                 </entry>
                                 <entry>
-                                  <AssetClass reference="12"/>
-                                  <long>180</long>
+                                  <org.optaplanner.examples.investment.domain.AssetClass reference="14"/>
+                                  <long>9</long>
                                 </entry>
                                 <entry>
-                                  <AssetClass reference="14"/>
-                                  <long>330</long>
+                                  <org.optaplanner.examples.investment.domain.AssetClass reference="16"/>
+                                  <long>31</long>
                                 </entry>
                                 <entry>
-                                  <AssetClass reference="16"/>
-                                  <long>270</long>
-                                </entry>
-                                <entry>
-                                  <AssetClass reference="18"/>
+                                  <org.optaplanner.examples.investment.domain.AssetClass reference="18"/>
                                   <long>0</long>
                                 </entry>
                                 <entry>
-                                  <AssetClass id="20">
-                                    <id>6</id>
-                                    <name>Tesla Motors, Inc.</name>
+                                  <org.optaplanner.examples.investment.domain.AssetClass id="20">
+                                    <id>4</id>
+                                    <name>Apple Inc.</name>
                                     <region reference="4"/>
-                                    <sector reference="7"/>
-                                    <expectedReturnMillis>547</expectedReturnMillis>
-                                    <standardDeviationRiskMillis>539</standardDeviationRiskMillis>
-                                    <correlationMillisMap class="linked-hash-map" id="21">
+                                    <sector reference="6"/>
+                                    <expectedReturnMillis>2884</expectedReturnMillis>
+                                    <standardDeviationRiskMillis>2414</standardDeviationRiskMillis>
+                                    <correlationMillisMap id="21">
                                       <entry>
-                                        <AssetClass reference="10"/>
-                                        <long>230</long>
+                                        <org.optaplanner.examples.investment.domain.AssetClass reference="12"/>
+                                        <long>27</long>
                                       </entry>
                                       <entry>
-                                        <AssetClass reference="12"/>
-                                        <long>100</long>
+                                        <org.optaplanner.examples.investment.domain.AssetClass reference="14"/>
+                                        <long>25</long>
                                       </entry>
                                       <entry>
-                                        <AssetClass reference="14"/>
-                                        <long>140</long>
+                                        <org.optaplanner.examples.investment.domain.AssetClass reference="16"/>
+                                        <long>23</long>
                                       </entry>
                                       <entry>
-                                        <AssetClass reference="16"/>
-                                        <long>10</long>
+                                        <org.optaplanner.examples.investment.domain.AssetClass reference="18"/>
+                                        <long>3</long>
                                       </entry>
                                       <entry>
-                                        <AssetClass reference="18"/>
-                                        <long>180</long>
-                                      </entry>
-                                      <entry>
-                                        <AssetClass reference="20"/>
+                                        <org.optaplanner.examples.investment.domain.AssetClass reference="20"/>
                                         <long>0</long>
                                       </entry>
                                       <entry>
-                                        <AssetClass id="22">
-                                          <id>7</id>
-                                          <name>Ford Motor Company</name>
+                                        <org.optaplanner.examples.investment.domain.AssetClass id="22">
+                                          <id>6</id>
+                                          <name>Tesla Motors, Inc.</name>
                                           <region reference="4"/>
                                           <sector reference="7"/>
-                                          <expectedReturnMillis>10</expectedReturnMillis>
-                                          <standardDeviationRiskMillis>259</standardDeviationRiskMillis>
-                                          <correlationMillisMap class="linked-hash-map" id="23">
+                                          <expectedReturnMillis>5473</expectedReturnMillis>
+                                          <standardDeviationRiskMillis>5398</standardDeviationRiskMillis>
+                                          <correlationMillisMap id="23">
                                             <entry>
-                                              <AssetClass reference="10"/>
-                                              <long>210</long>
+                                              <org.optaplanner.examples.investment.domain.AssetClass reference="12"/>
+                                              <long>18</long>
                                             </entry>
                                             <entry>
-                                              <AssetClass reference="12"/>
-                                              <long>80</long>
+                                              <org.optaplanner.examples.investment.domain.AssetClass reference="14"/>
+                                              <long>23</long>
                                             </entry>
                                             <entry>
-                                              <AssetClass reference="14"/>
-                                              <long>420</long>
+                                              <org.optaplanner.examples.investment.domain.AssetClass reference="16"/>
+                                              <long>24</long>
                                             </entry>
                                             <entry>
-                                              <AssetClass reference="16"/>
-                                              <long>150</long>
+                                              <org.optaplanner.examples.investment.domain.AssetClass reference="18"/>
+                                              <long>-5</long>
                                             </entry>
                                             <entry>
-                                              <AssetClass reference="18"/>
-                                              <long>290</long>
+                                              <org.optaplanner.examples.investment.domain.AssetClass reference="20"/>
+                                              <long>1</long>
                                             </entry>
                                             <entry>
-                                              <AssetClass reference="20"/>
-                                              <long>320</long>
-                                            </entry>
-                                            <entry>
-                                              <AssetClass reference="22"/>
+                                              <org.optaplanner.examples.investment.domain.AssetClass reference="22"/>
                                               <long>0</long>
                                             </entry>
                                             <entry>
-                                              <AssetClass id="24">
-                                                <id>8</id>
-                                                <name>Toyota Motor Corp Ltd Ord</name>
+                                              <org.optaplanner.examples.investment.domain.AssetClass id="24">
+                                                <id>7</id>
+                                                <name>Ford Motor Company</name>
                                                 <region reference="4"/>
                                                 <sector reference="7"/>
-                                                <expectedReturnMillis>136</expectedReturnMillis>
-                                                <standardDeviationRiskMillis>192</standardDeviationRiskMillis>
-                                                <correlationMillisMap class="linked-hash-map" id="25">
+                                                <expectedReturnMillis>105</expectedReturnMillis>
+                                                <standardDeviationRiskMillis>2592</standardDeviationRiskMillis>
+                                                <correlationMillisMap id="25">
                                                   <entry>
-                                                    <AssetClass reference="10"/>
-                                                    <long>80</long>
+                                                    <org.optaplanner.examples.investment.domain.AssetClass reference="12"/>
+                                                    <long>29</long>
                                                   </entry>
                                                   <entry>
-                                                    <AssetClass reference="12"/>
-                                                    <long>200</long>
+                                                    <org.optaplanner.examples.investment.domain.AssetClass reference="14"/>
+                                                    <long>83</long>
                                                   </entry>
                                                   <entry>
-                                                    <AssetClass reference="14"/>
-                                                    <long>190</long>
+                                                    <org.optaplanner.examples.investment.domain.AssetClass reference="16"/>
+                                                    <long>36</long>
                                                   </entry>
                                                   <entry>
-                                                    <AssetClass reference="16"/>
-                                                    <long>180</long>
+                                                    <org.optaplanner.examples.investment.domain.AssetClass reference="18"/>
+                                                    <long>10</long>
                                                   </entry>
                                                   <entry>
-                                                    <AssetClass reference="18"/>
-                                                    <long>250</long>
+                                                    <org.optaplanner.examples.investment.domain.AssetClass reference="20"/>
+                                                    <long>15</long>
                                                   </entry>
                                                   <entry>
-                                                    <AssetClass reference="20"/>
-                                                    <long>160</long>
+                                                    <org.optaplanner.examples.investment.domain.AssetClass reference="22"/>
+                                                    <long>32</long>
                                                   </entry>
                                                   <entry>
-                                                    <AssetClass reference="22"/>
-                                                    <long>240</long>
-                                                  </entry>
-                                                  <entry>
-                                                    <AssetClass reference="24"/>
+                                                    <org.optaplanner.examples.investment.domain.AssetClass reference="24"/>
                                                     <long>0</long>
                                                   </entry>
                                                   <entry>
-                                                    <AssetClass id="26">
-                                                      <id>9</id>
-                                                      <name>General Motors Company</name>
+                                                    <org.optaplanner.examples.investment.domain.AssetClass id="26">
+                                                      <id>2</id>
+                                                      <name>Google Inc.</name>
                                                       <region reference="4"/>
-                                                      <sector reference="7"/>
-                                                      <expectedReturnMillis>21</expectedReturnMillis>
-                                                      <standardDeviationRiskMillis>295</standardDeviationRiskMillis>
-                                                      <correlationMillisMap class="linked-hash-map" id="27">
+                                                      <sector reference="6"/>
+                                                      <expectedReturnMillis>1567</expectedReturnMillis>
+                                                      <standardDeviationRiskMillis>2158</standardDeviationRiskMillis>
+                                                      <correlationMillisMap id="27">
                                                         <entry>
-                                                          <AssetClass reference="10"/>
-                                                          <long>320</long>
+                                                          <org.optaplanner.examples.investment.domain.AssetClass reference="12"/>
+                                                          <long>18</long>
                                                         </entry>
                                                         <entry>
-                                                          <AssetClass reference="12"/>
-                                                          <long>210</long>
+                                                          <org.optaplanner.examples.investment.domain.AssetClass reference="14"/>
+                                                          <long>21</long>
                                                         </entry>
                                                         <entry>
-                                                          <AssetClass reference="14"/>
-                                                          <long>500</long>
+                                                          <org.optaplanner.examples.investment.domain.AssetClass reference="16"/>
+                                                          <long>21</long>
                                                         </entry>
                                                         <entry>
-                                                          <AssetClass reference="16"/>
-                                                          <long>250</long>
+                                                          <org.optaplanner.examples.investment.domain.AssetClass reference="18"/>
+                                                          <long>21</long>
                                                         </entry>
                                                         <entry>
-                                                          <AssetClass reference="18"/>
-                                                          <long>320</long>
+                                                          <org.optaplanner.examples.investment.domain.AssetClass reference="20"/>
+                                                          <long>26</long>
                                                         </entry>
                                                         <entry>
-                                                          <AssetClass reference="20"/>
-                                                          <long>230</long>
+                                                          <org.optaplanner.examples.investment.domain.AssetClass reference="22"/>
+                                                          <long>10</long>
                                                         </entry>
                                                         <entry>
-                                                          <AssetClass reference="22"/>
-                                                          <long>830</long>
+                                                          <org.optaplanner.examples.investment.domain.AssetClass reference="24"/>
+                                                          <long>8</long>
                                                         </entry>
                                                         <entry>
-                                                          <AssetClass reference="24"/>
-                                                          <long>360</long>
-                                                        </entry>
-                                                        <entry>
-                                                          <AssetClass reference="26"/>
+                                                          <org.optaplanner.examples.investment.domain.AssetClass reference="26"/>
                                                           <long>0</long>
                                                         </entry>
                                                         <entry>
-                                                          <AssetClass id="28">
-                                                            <id>10</id>
-                                                            <name>Starbucks Corporation</name>
+                                                          <org.optaplanner.examples.investment.domain.AssetClass id="28">
+                                                            <id>3</id>
+                                                            <name>Oracle Corporation</name>
                                                             <region reference="4"/>
-                                                            <sector reference="8"/>
-                                                            <expectedReturnMillis>332</expectedReturnMillis>
-                                                            <standardDeviationRiskMillis>197</standardDeviationRiskMillis>
-                                                            <correlationMillisMap class="linked-hash-map" id="29">
+                                                            <sector reference="6"/>
+                                                            <expectedReturnMillis>1232</expectedReturnMillis>
+                                                            <standardDeviationRiskMillis>2171</standardDeviationRiskMillis>
+                                                            <correlationMillisMap id="29">
                                                               <entry>
-                                                                <AssetClass reference="10"/>
-                                                                <long>330</long>
+                                                                <org.optaplanner.examples.investment.domain.AssetClass reference="12"/>
+                                                                <long>33</long>
                                                               </entry>
                                                               <entry>
-                                                                <AssetClass reference="12"/>
-                                                                <long>210</long>
+                                                                <org.optaplanner.examples.investment.domain.AssetClass reference="14"/>
+                                                                <long>50</long>
                                                               </entry>
                                                               <entry>
-                                                                <AssetClass reference="14"/>
-                                                                <long>170</long>
+                                                                <org.optaplanner.examples.investment.domain.AssetClass reference="16"/>
+                                                                <long>17</long>
                                                               </entry>
                                                               <entry>
-                                                                <AssetClass reference="16"/>
-                                                                <long>230</long>
+                                                                <org.optaplanner.examples.investment.domain.AssetClass reference="18"/>
+                                                                <long>-1</long>
                                                               </entry>
                                                               <entry>
-                                                                <AssetClass reference="18"/>
-                                                                <long>170</long>
+                                                                <org.optaplanner.examples.investment.domain.AssetClass reference="20"/>
+                                                                <long>19</long>
                                                               </entry>
                                                               <entry>
-                                                                <AssetClass reference="20"/>
-                                                                <long>240</long>
+                                                                <org.optaplanner.examples.investment.domain.AssetClass reference="22"/>
+                                                                <long>14</long>
                                                               </entry>
                                                               <entry>
-                                                                <AssetClass reference="22"/>
-                                                                <long>360</long>
+                                                                <org.optaplanner.examples.investment.domain.AssetClass reference="24"/>
+                                                                <long>42</long>
                                                               </entry>
                                                               <entry>
-                                                                <AssetClass reference="24"/>
-                                                                <long>320</long>
+                                                                <org.optaplanner.examples.investment.domain.AssetClass reference="26"/>
+                                                                <long>5</long>
                                                               </entry>
                                                               <entry>
-                                                                <AssetClass reference="26"/>
-                                                                <long>300</long>
-                                                              </entry>
-                                                              <entry>
-                                                                <AssetClass reference="28"/>
+                                                                <org.optaplanner.examples.investment.domain.AssetClass reference="28"/>
                                                                 <long>0</long>
                                                               </entry>
                                                               <entry>
-                                                                <AssetClass id="30">
-                                                                  <id>11</id>
-                                                                  <name>McDonald&apos;s Corporation</name>
+                                                                <org.optaplanner.examples.investment.domain.AssetClass id="30">
+                                                                  <id>8</id>
+                                                                  <name>Toyota Motor Corp Ltd Ord</name>
                                                                   <region reference="4"/>
-                                                                  <sector reference="8"/>
-                                                                  <expectedReturnMillis>80</expectedReturnMillis>
-                                                                  <standardDeviationRiskMillis>113</standardDeviationRiskMillis>
-                                                                  <correlationMillisMap class="linked-hash-map" id="31">
+                                                                  <sector reference="6"/>
+                                                                  <expectedReturnMillis>1363</expectedReturnMillis>
+                                                                  <standardDeviationRiskMillis>1920</standardDeviationRiskMillis>
+                                                                  <correlationMillisMap id="31">
                                                                     <entry>
-                                                                      <AssetClass reference="10"/>
+                                                                      <org.optaplanner.examples.investment.domain.AssetClass reference="12"/>
+                                                                      <long>25</long>
+                                                                    </entry>
+                                                                    <entry>
+                                                                      <org.optaplanner.examples.investment.domain.AssetClass reference="14"/>
+                                                                      <long>36</long>
+                                                                    </entry>
+                                                                    <entry>
+                                                                      <org.optaplanner.examples.investment.domain.AssetClass reference="16"/>
+                                                                      <long>32</long>
+                                                                    </entry>
+                                                                    <entry>
+                                                                      <org.optaplanner.examples.investment.domain.AssetClass reference="18"/>
+                                                                      <long>10</long>
+                                                                    </entry>
+                                                                    <entry>
+                                                                      <org.optaplanner.examples.investment.domain.AssetClass reference="20"/>
+                                                                      <long>18</long>
+                                                                    </entry>
+                                                                    <entry>
+                                                                      <org.optaplanner.examples.investment.domain.AssetClass reference="22"/>
+                                                                      <long>16</long>
+                                                                    </entry>
+                                                                    <entry>
+                                                                      <org.optaplanner.examples.investment.domain.AssetClass reference="24"/>
+                                                                      <long>24</long>
+                                                                    </entry>
+                                                                    <entry>
+                                                                      <org.optaplanner.examples.investment.domain.AssetClass reference="26"/>
+                                                                      <long>20</long>
+                                                                    </entry>
+                                                                    <entry>
+                                                                      <org.optaplanner.examples.investment.domain.AssetClass reference="28"/>
+                                                                      <long>19</long>
+                                                                    </entry>
+                                                                    <entry>
+                                                                      <org.optaplanner.examples.investment.domain.AssetClass reference="30"/>
                                                                       <long>0</long>
                                                                     </entry>
                                                                     <entry>
-                                                                      <AssetClass reference="12"/>
-                                                                      <long>210</long>
-                                                                    </entry>
-                                                                    <entry>
-                                                                      <AssetClass reference="14"/>
-                                                                      <long>-10</long>
-                                                                    </entry>
-                                                                    <entry>
-                                                                      <AssetClass reference="16"/>
-                                                                      <long>30</long>
-                                                                    </entry>
-                                                                    <entry>
-                                                                      <AssetClass reference="18"/>
-                                                                      <long>160</long>
-                                                                    </entry>
-                                                                    <entry>
-                                                                      <AssetClass reference="20"/>
-                                                                      <long>-50</long>
-                                                                    </entry>
-                                                                    <entry>
-                                                                      <AssetClass reference="22"/>
-                                                                      <long>100</long>
-                                                                    </entry>
-                                                                    <entry>
-                                                                      <AssetClass reference="24"/>
-                                                                      <long>100</long>
-                                                                    </entry>
-                                                                    <entry>
-                                                                      <AssetClass reference="26"/>
-                                                                      <long>90</long>
-                                                                    </entry>
-                                                                    <entry>
-                                                                      <AssetClass reference="28"/>
-                                                                      <long>310</long>
-                                                                    </entry>
-                                                                    <entry>
-                                                                      <AssetClass reference="30"/>
-                                                                      <long>0</long>
+                                                                      <org.optaplanner.examples.investment.domain.AssetClass reference="10"/>
+                                                                      <long>8</long>
                                                                     </entry>
                                                                   </correlationMillisMap>
-                                                                </AssetClass>
-                                                                <long>310</long>
+                                                                </org.optaplanner.examples.investment.domain.AssetClass>
+                                                                <long>19</long>
+                                                              </entry>
+                                                              <entry>
+                                                                <org.optaplanner.examples.investment.domain.AssetClass reference="10"/>
+                                                                <long>60</long>
                                                               </entry>
                                                             </correlationMillisMap>
-                                                          </AssetClass>
-                                                          <long>300</long>
+                                                          </org.optaplanner.examples.investment.domain.AssetClass>
+                                                          <long>5</long>
                                                         </entry>
                                                         <entry>
-                                                          <AssetClass reference="30"/>
-                                                          <long>90</long>
+                                                          <org.optaplanner.examples.investment.domain.AssetClass reference="30"/>
+                                                          <long>20</long>
+                                                        </entry>
+                                                        <entry>
+                                                          <org.optaplanner.examples.investment.domain.AssetClass reference="10"/>
+                                                          <long>5</long>
                                                         </entry>
                                                       </correlationMillisMap>
-                                                    </AssetClass>
-                                                    <long>360</long>
+                                                    </org.optaplanner.examples.investment.domain.AssetClass>
+                                                    <long>8</long>
                                                   </entry>
                                                   <entry>
-                                                    <AssetClass reference="28"/>
-                                                    <long>320</long>
+                                                    <org.optaplanner.examples.investment.domain.AssetClass reference="28"/>
+                                                    <long>42</long>
                                                   </entry>
                                                   <entry>
-                                                    <AssetClass reference="30"/>
-                                                    <long>100</long>
+                                                    <org.optaplanner.examples.investment.domain.AssetClass reference="30"/>
+                                                    <long>24</long>
+                                                  </entry>
+                                                  <entry>
+                                                    <org.optaplanner.examples.investment.domain.AssetClass reference="10"/>
+                                                    <long>21</long>
                                                   </entry>
                                                 </correlationMillisMap>
-                                              </AssetClass>
-                                              <long>240</long>
+                                              </org.optaplanner.examples.investment.domain.AssetClass>
+                                              <long>32</long>
                                             </entry>
                                             <entry>
-                                              <AssetClass reference="26"/>
-                                              <long>830</long>
+                                              <org.optaplanner.examples.investment.domain.AssetClass reference="26"/>
+                                              <long>10</long>
                                             </entry>
                                             <entry>
-                                              <AssetClass reference="28"/>
-                                              <long>360</long>
+                                              <org.optaplanner.examples.investment.domain.AssetClass reference="28"/>
+                                              <long>14</long>
                                             </entry>
                                             <entry>
-                                              <AssetClass reference="30"/>
-                                              <long>100</long>
+                                              <org.optaplanner.examples.investment.domain.AssetClass reference="30"/>
+                                              <long>16</long>
+                                            </entry>
+                                            <entry>
+                                              <org.optaplanner.examples.investment.domain.AssetClass reference="10"/>
+                                              <long>23</long>
                                             </entry>
                                           </correlationMillisMap>
-                                        </AssetClass>
-                                        <long>320</long>
+                                        </org.optaplanner.examples.investment.domain.AssetClass>
+                                        <long>1</long>
                                       </entry>
                                       <entry>
-                                        <AssetClass reference="24"/>
-                                        <long>160</long>
+                                        <org.optaplanner.examples.investment.domain.AssetClass reference="24"/>
+                                        <long>15</long>
                                       </entry>
                                       <entry>
-                                        <AssetClass reference="26"/>
-                                        <long>230</long>
+                                        <org.optaplanner.examples.investment.domain.AssetClass reference="26"/>
+                                        <long>26</long>
                                       </entry>
                                       <entry>
-                                        <AssetClass reference="28"/>
-                                        <long>240</long>
+                                        <org.optaplanner.examples.investment.domain.AssetClass reference="28"/>
+                                        <long>19</long>
                                       </entry>
                                       <entry>
-                                        <AssetClass reference="30"/>
-                                        <long>-50</long>
+                                        <org.optaplanner.examples.investment.domain.AssetClass reference="30"/>
+                                        <long>18</long>
+                                      </entry>
+                                      <entry>
+                                        <org.optaplanner.examples.investment.domain.AssetClass reference="10"/>
+                                        <long>13</long>
                                       </entry>
                                     </correlationMillisMap>
-                                  </AssetClass>
-                                  <long>180</long>
+                                  </org.optaplanner.examples.investment.domain.AssetClass>
+                                  <long>3</long>
                                 </entry>
                                 <entry>
-                                  <AssetClass reference="22"/>
-                                  <long>290</long>
+                                  <org.optaplanner.examples.investment.domain.AssetClass reference="22"/>
+                                  <long>-5</long>
                                 </entry>
                                 <entry>
-                                  <AssetClass reference="24"/>
-                                  <long>250</long>
+                                  <org.optaplanner.examples.investment.domain.AssetClass reference="24"/>
+                                  <long>10</long>
                                 </entry>
                                 <entry>
-                                  <AssetClass reference="26"/>
-                                  <long>320</long>
+                                  <org.optaplanner.examples.investment.domain.AssetClass reference="26"/>
+                                  <long>21</long>
                                 </entry>
                                 <entry>
-                                  <AssetClass reference="28"/>
-                                  <long>170</long>
+                                  <org.optaplanner.examples.investment.domain.AssetClass reference="28"/>
+                                  <long>-1</long>
                                 </entry>
                                 <entry>
-                                  <AssetClass reference="30"/>
-                                  <long>160</long>
+                                  <org.optaplanner.examples.investment.domain.AssetClass reference="30"/>
+                                  <long>10</long>
+                                </entry>
+                                <entry>
+                                  <org.optaplanner.examples.investment.domain.AssetClass reference="10"/>
+                                  <long>0</long>
                                 </entry>
                               </correlationMillisMap>
-                            </AssetClass>
-                            <long>270</long>
+                            </org.optaplanner.examples.investment.domain.AssetClass>
+                            <long>31</long>
                           </entry>
                           <entry>
-                            <AssetClass reference="20"/>
-                            <long>10</long>
+                            <org.optaplanner.examples.investment.domain.AssetClass reference="20"/>
+                            <long>23</long>
                           </entry>
                           <entry>
-                            <AssetClass reference="22"/>
-                            <long>150</long>
+                            <org.optaplanner.examples.investment.domain.AssetClass reference="22"/>
+                            <long>24</long>
                           </entry>
                           <entry>
-                            <AssetClass reference="24"/>
-                            <long>180</long>
+                            <org.optaplanner.examples.investment.domain.AssetClass reference="24"/>
+                            <long>36</long>
                           </entry>
                           <entry>
-                            <AssetClass reference="26"/>
-                            <long>250</long>
+                            <org.optaplanner.examples.investment.domain.AssetClass reference="26"/>
+                            <long>21</long>
                           </entry>
                           <entry>
-                            <AssetClass reference="28"/>
-                            <long>230</long>
+                            <org.optaplanner.examples.investment.domain.AssetClass reference="28"/>
+                            <long>17</long>
                           </entry>
                           <entry>
-                            <AssetClass reference="30"/>
-                            <long>30</long>
+                            <org.optaplanner.examples.investment.domain.AssetClass reference="30"/>
+                            <long>32</long>
+                          </entry>
+                          <entry>
+                            <org.optaplanner.examples.investment.domain.AssetClass reference="10"/>
+                            <long>33</long>
                           </entry>
                         </correlationMillisMap>
-                      </AssetClass>
-                      <long>190</long>
+                      </org.optaplanner.examples.investment.domain.AssetClass>
+                      <long>30</long>
                     </entry>
                     <entry>
-                      <AssetClass reference="18"/>
-                      <long>330</long>
+                      <org.optaplanner.examples.investment.domain.AssetClass reference="18"/>
+                      <long>9</long>
                     </entry>
                     <entry>
-                      <AssetClass reference="20"/>
-                      <long>140</long>
+                      <org.optaplanner.examples.investment.domain.AssetClass reference="20"/>
+                      <long>25</long>
                     </entry>
                     <entry>
-                      <AssetClass reference="22"/>
-                      <long>420</long>
+                      <org.optaplanner.examples.investment.domain.AssetClass reference="22"/>
+                      <long>23</long>
                     </entry>
                     <entry>
-                      <AssetClass reference="24"/>
-                      <long>190</long>
+                      <org.optaplanner.examples.investment.domain.AssetClass reference="24"/>
+                      <long>83</long>
                     </entry>
                     <entry>
-                      <AssetClass reference="26"/>
-                      <long>500</long>
+                      <org.optaplanner.examples.investment.domain.AssetClass reference="26"/>
+                      <long>21</long>
                     </entry>
                     <entry>
-                      <AssetClass reference="28"/>
-                      <long>170</long>
+                      <org.optaplanner.examples.investment.domain.AssetClass reference="28"/>
+                      <long>50</long>
                     </entry>
                     <entry>
-                      <AssetClass reference="30"/>
-                      <long>-10</long>
+                      <org.optaplanner.examples.investment.domain.AssetClass reference="30"/>
+                      <long>36</long>
+                    </entry>
+                    <entry>
+                      <org.optaplanner.examples.investment.domain.AssetClass reference="10"/>
+                      <long>32</long>
                     </entry>
                   </correlationMillisMap>
-                </AssetClass>
-                <long>50</long>
+                </org.optaplanner.examples.investment.domain.AssetClass>
+                <long>31</long>
               </entry>
               <entry>
-                <AssetClass reference="16"/>
-                <long>260</long>
+                <org.optaplanner.examples.investment.domain.AssetClass reference="16"/>
+                <long>17</long>
               </entry>
               <entry>
-                <AssetClass reference="18"/>
-                <long>180</long>
+                <org.optaplanner.examples.investment.domain.AssetClass reference="18"/>
+                <long>16</long>
               </entry>
               <entry>
-                <AssetClass reference="20"/>
-                <long>100</long>
+                <org.optaplanner.examples.investment.domain.AssetClass reference="20"/>
+                <long>27</long>
               </entry>
               <entry>
-                <AssetClass reference="22"/>
-                <long>80</long>
+                <org.optaplanner.examples.investment.domain.AssetClass reference="22"/>
+                <long>18</long>
               </entry>
               <entry>
-                <AssetClass reference="24"/>
-                <long>200</long>
+                <org.optaplanner.examples.investment.domain.AssetClass reference="24"/>
+                <long>29</long>
               </entry>
               <entry>
-                <AssetClass reference="26"/>
-                <long>210</long>
+                <org.optaplanner.examples.investment.domain.AssetClass reference="26"/>
+                <long>18</long>
               </entry>
               <entry>
-                <AssetClass reference="28"/>
-                <long>210</long>
+                <org.optaplanner.examples.investment.domain.AssetClass reference="28"/>
+                <long>33</long>
               </entry>
               <entry>
-                <AssetClass reference="30"/>
-                <long>210</long>
+                <org.optaplanner.examples.investment.domain.AssetClass reference="30"/>
+                <long>25</long>
+              </entry>
+              <entry>
+                <org.optaplanner.examples.investment.domain.AssetClass reference="10"/>
+                <long>14</long>
               </entry>
             </correlationMillisMap>
-          </AssetClass>
-          <long>50</long>
+          </org.optaplanner.examples.investment.domain.AssetClass>
+          <long>14</long>
         </entry>
         <entry>
-          <AssetClass reference="14"/>
-          <long>600</long>
+          <org.optaplanner.examples.investment.domain.AssetClass reference="14"/>
+          <long>32</long>
         </entry>
         <entry>
-          <AssetClass reference="16"/>
-          <long>130</long>
+          <org.optaplanner.examples.investment.domain.AssetClass reference="16"/>
+          <long>33</long>
         </entry>
         <entry>
-          <AssetClass reference="18"/>
-          <long>140</long>
+          <org.optaplanner.examples.investment.domain.AssetClass reference="18"/>
+          <long>0</long>
         </entry>
         <entry>
-          <AssetClass reference="20"/>
-          <long>230</long>
+          <org.optaplanner.examples.investment.domain.AssetClass reference="20"/>
+          <long>13</long>
         </entry>
         <entry>
-          <AssetClass reference="22"/>
-          <long>210</long>
+          <org.optaplanner.examples.investment.domain.AssetClass reference="22"/>
+          <long>23</long>
         </entry>
         <entry>
-          <AssetClass reference="24"/>
-          <long>80</long>
+          <org.optaplanner.examples.investment.domain.AssetClass reference="24"/>
+          <long>21</long>
         </entry>
         <entry>
-          <AssetClass reference="26"/>
-          <long>320</long>
+          <org.optaplanner.examples.investment.domain.AssetClass reference="26"/>
+          <long>5</long>
         </entry>
         <entry>
-          <AssetClass reference="28"/>
-          <long>330</long>
+          <org.optaplanner.examples.investment.domain.AssetClass reference="28"/>
+          <long>6</long>
         </entry>
         <entry>
-          <AssetClass reference="30"/>
+          <org.optaplanner.examples.investment.domain.AssetClass reference="30"/>
+          <long>8</long>
+        </entry>
+        <entry>
+          <org.optaplanner.examples.investment.domain.AssetClass reference="10"/>
           <long>0</long>
         </entry>
       </correlationMillisMap>
-    </AssetClass>
-    <AssetClass reference="12"/>
-    <AssetClass reference="14"/>
-    <AssetClass reference="16"/>
-    <AssetClass reference="18"/>
-    <AssetClass reference="20"/>
-    <AssetClass reference="22"/>
-    <AssetClass reference="24"/>
-    <AssetClass reference="26"/>
-    <AssetClass reference="28"/>
-    <AssetClass reference="30"/>
+    </org.optaplanner.examples.investment.domain.AssetClass>
+    <org.optaplanner.examples.investment.domain.AssetClass reference="26"/>
+    <org.optaplanner.examples.investment.domain.AssetClass reference="28"/>
+    <org.optaplanner.examples.investment.domain.AssetClass reference="20"/>
+    <org.optaplanner.examples.investment.domain.AssetClass reference="12"/>
+    <org.optaplanner.examples.investment.domain.AssetClass reference="22"/>
+    <org.optaplanner.examples.investment.domain.AssetClass reference="24"/>
+    <org.optaplanner.examples.investment.domain.AssetClass reference="30"/>
+    <org.optaplanner.examples.investment.domain.AssetClass reference="14"/>
+    <org.optaplanner.examples.investment.domain.AssetClass reference="16"/>
+    <org.optaplanner.examples.investment.domain.AssetClass reference="18"/>
   </assetClassList>
   <assetClassAllocationList id="32">
-    <AssetClassAllocation id="33">
+    <org.optaplanner.examples.investment.domain.AssetClassAllocation id="33">
       <id>1</id>
       <assetClass reference="10"/>
-    </AssetClassAllocation>
-    <AssetClassAllocation id="34">
+    </org.optaplanner.examples.investment.domain.AssetClassAllocation>
+    <org.optaplanner.examples.investment.domain.AssetClassAllocation id="34">
       <id>2</id>
-      <assetClass reference="12"/>
-    </AssetClassAllocation>
-    <AssetClassAllocation id="35">
-      <id>3</id>
-      <assetClass reference="14"/>
-    </AssetClassAllocation>
-    <AssetClassAllocation id="36">
-      <id>4</id>
-      <assetClass reference="16"/>
-    </AssetClassAllocation>
-    <AssetClassAllocation id="37">
-      <id>5</id>
-      <assetClass reference="18"/>
-    </AssetClassAllocation>
-    <AssetClassAllocation id="38">
-      <id>6</id>
-      <assetClass reference="20"/>
-    </AssetClassAllocation>
-    <AssetClassAllocation id="39">
-      <id>7</id>
-      <assetClass reference="22"/>
-    </AssetClassAllocation>
-    <AssetClassAllocation id="40">
-      <id>8</id>
-      <assetClass reference="24"/>
-    </AssetClassAllocation>
-    <AssetClassAllocation id="41">
-      <id>9</id>
       <assetClass reference="26"/>
-    </AssetClassAllocation>
-    <AssetClassAllocation id="42">
-      <id>10</id>
+    </org.optaplanner.examples.investment.domain.AssetClassAllocation>
+    <org.optaplanner.examples.investment.domain.AssetClassAllocation id="35">
+      <id>3</id>
       <assetClass reference="28"/>
-    </AssetClassAllocation>
-    <AssetClassAllocation id="43">
-      <id>11</id>
+    </org.optaplanner.examples.investment.domain.AssetClassAllocation>
+    <org.optaplanner.examples.investment.domain.AssetClassAllocation id="36">
+      <id>4</id>
+      <assetClass reference="20"/>
+    </org.optaplanner.examples.investment.domain.AssetClassAllocation>
+    <org.optaplanner.examples.investment.domain.AssetClassAllocation id="37">
+      <id>5</id>
+      <assetClass reference="12"/>
+    </org.optaplanner.examples.investment.domain.AssetClassAllocation>
+    <org.optaplanner.examples.investment.domain.AssetClassAllocation id="38">
+      <id>6</id>
+      <assetClass reference="22"/>
+    </org.optaplanner.examples.investment.domain.AssetClassAllocation>
+    <org.optaplanner.examples.investment.domain.AssetClassAllocation id="39">
+      <id>7</id>
+      <assetClass reference="24"/>
+    </org.optaplanner.examples.investment.domain.AssetClassAllocation>
+    <org.optaplanner.examples.investment.domain.AssetClassAllocation id="40">
+      <id>8</id>
       <assetClass reference="30"/>
-    </AssetClassAllocation>
+    </org.optaplanner.examples.investment.domain.AssetClassAllocation>
+    <org.optaplanner.examples.investment.domain.AssetClassAllocation id="41">
+      <id>9</id>
+      <assetClass reference="14"/>
+    </org.optaplanner.examples.investment.domain.AssetClassAllocation>
+    <org.optaplanner.examples.investment.domain.AssetClassAllocation id="42">
+      <id>10</id>
+      <assetClass reference="16"/>
+    </org.optaplanner.examples.investment.domain.AssetClassAllocation>
+    <org.optaplanner.examples.investment.domain.AssetClassAllocation id="43">
+      <id>11</id>
+      <assetClass reference="18"/>
+    </org.optaplanner.examples.investment.domain.AssetClassAllocation>
   </assetClassAllocationList>
-</InvestmentSolution>
+</org.optaplanner.examples.investment.domain.InvestmentSolution>

@@ -17,11 +17,9 @@
 package org.optaplanner.examples.investment.persistence;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,209 +38,403 @@ import org.optaplanner.examples.investment.domain.util.InvestmentNumericUtil;
 
 public class InvestmentImporter extends AbstractXlsxSolutionImporter<InvestmentSolution> {
 
-    public static void main(String[] args) {
-        SolutionConverter<InvestmentSolution> converter = SolutionConverter.createImportConverter(
-                InvestmentApp.DATA_DIR_NAME, new InvestmentImporter(), InvestmentSolution.class);
-        converter.convert("irrinki_1.xlsx", "irrinki_1.xml");
-        converter.convert("de_smet_1.xlsx", "de_smet_1.xml");
-    }
+	public static void main(String[] args) {
+		SolutionConverter<InvestmentSolution> converter = SolutionConverter
+				.createImportConverter(InvestmentApp.DATA_DIR_NAME, new InvestmentImporter(), InvestmentSolution.class);
+		converter.convert("de_smet_1.xlsx", "de_smet_1.xml");
+	}
 
-    @Override
-    public XlsxInputBuilder<InvestmentSolution> createXlsxInputBuilder() {
-        return new InvestmentAllocationInputBuilder();
-    }
+	@Override
+	public XlsxInputBuilder<InvestmentSolution> createXlsxInputBuilder() {
+		return new InvestmentAllocationInputBuilder();
+	}
 
-    public static class InvestmentAllocationInputBuilder extends XlsxInputBuilder<InvestmentSolution> {
+	public static class InvestmentAllocationInputBuilder extends XlsxInputBuilder<InvestmentSolution> {
 
-        private InvestmentSolution solution;
+		private InvestmentSolution solution;
 
-        private Map<String, Region> regionMap;
-        private Map<String, Sector> sectorMap;
+		private final Map<String, Region> regionMap = new HashMap<>();
+		private final Map<String, Sector> sectorMap = new HashMap<>();
 
-        @Override
-        public InvestmentSolution readSolution() throws IOException {
-            solution = new InvestmentSolution();
-            solution.setId(0L);
-            readParametrization();
-            readRegionList();
-            readSectorList();
-            readAssetClassList();
-            createAssetClassAllocationList();
+		@Override
+		public InvestmentSolution readSolution() throws IOException {
+			solution = new InvestmentSolution();
+			solution.setId(0L);
+			readParametrization();
+			readRegionList();
+			readSectorList();
+			readAssetClassList();
+			createAssetClassAllocationList();
 
-            BigInteger possibleSolutionSize = BigInteger.valueOf(solution.getAssetClassList().size()).multiply(
-                    BigInteger.valueOf(InvestmentNumericUtil.MAXIMUM_QUANTITY_MILLIS));
-            logger.info("InvestmentAllocation {} has {} regions, {} sectors and {} asset classes"
-                    + " with a search space of {}.",
-                    getInputId(),
-                    solution.getRegionList().size(),
-                    solution.getSectorList().size(),
-                    solution.getAssetClassList().size(),
-                    getFlooredPossibleSolutionSize(possibleSolutionSize));
-            return solution;
-        }
+			BigInteger possibleSolutionSize = BigInteger.valueOf(solution.getAssetClassList().size())
+					.multiply(BigInteger.valueOf(InvestmentNumericUtil.MAXIMUM_QUANTITY_MILLIS));
+			logger.info(
+					"InvestmentAllocation {} has {} regions, {} sectors and {} asset classes"
+							+ " with a search space of {}.",
+					getInputId(), solution.getRegionList().size(), solution.getSectorList().size(),
+					solution.getAssetClassList().size(), getFlooredPossibleSolutionSize(possibleSolutionSize));
+			return solution;
+		}
 
-        private void readParametrization() throws IOException {
-            Sheet sheet = readSheet(0, "Parametrization");
-            assertCellConstant(sheet.getRow(0).getCell(0), "Investment parametrization");
-            InvestmentParametrization parametrization = new InvestmentParametrization();
-            parametrization.setId(0L);
-            parametrization.setStandardDeviationMillisMaximum(
-                    parsePercentageMillis(readDoubleParameter(sheet.getRow(1), "Standard deviation maximum")));
-            solution.setParametrization(parametrization);
-        }
+		private void readParametrization() throws IOException {
+			InvestmentParametrization parametrization = new InvestmentParametrization();
+			parametrization.setId(0L);
+			parametrization.setStandardDeviationMillisMaximum(73);
+			solution.setParametrization(parametrization);
+		}
 
-        private void readRegionList() throws IOException {
-            Sheet sheet = readSheet(1, "Regions");
-            Row headerRow = sheet.getRow(0);
-            assertCellConstant(headerRow.getCell(0), "Name");
-            assertCellConstant(headerRow.getCell(1), "Quantity maximum");
-            List<Region> regionList = new ArrayList<>();
-            regionMap = new LinkedHashMap<>();
-            long id = 0L;
-            for (Row row : sheet) {
-                if (row.getRowNum() < 1) {
-                    continue;
-                }
-                if (row.getCell(0) == null && row.getCell(1) == null) {
-                    continue;
-                }
-                Region region = new Region();
-                region.setId(id);
-                id++;
-                region.setName(readStringCell(row.getCell(0)));
-                region.setQuantityMillisMaximum(parsePercentageMillis(readDoubleCell(row.getCell(1))));
-                regionList.add(region);
-                regionMap.put(region.getName(), region);
-            }
-            solution.setRegionList(regionList);
-        }
+		private void readRegionList() throws IOException {
+			List<Region> regionList = new ArrayList<>();
+			{
+				var region = new Region();
+				region.setId(0L);
+				region.setName("Global");
+				region.setQuantityMillisMaximum(1000L);
+				regionList.add(region);
+			}
+			for (var region : regionList) {
+				this.regionMap.put(region.getName(), region);
+			}
+			solution.setRegionList(regionList);
+		}
 
-        private void readSectorList() throws IOException {
-            Sheet sheet = readSheet(2, "Sectors");
-            Row headerRow = sheet.getRow(0);
-            assertCellConstant(headerRow.getCell(0), "Name");
-            assertCellConstant(headerRow.getCell(1), "Quantity maximum");
-            List<Sector> sectorList = new ArrayList<>();
-            sectorMap = new LinkedHashMap<>();
-            long id = 0L;
-            for (Row row : sheet) {
-                if (row.getRowNum() < 1) {
-                    continue;
-                }
-                if (row.getCell(0) == null && row.getCell(1) == null) {
-                    continue;
-                }
-                Sector sector = new Sector();
-                sector.setId(id);
-                id++;
-                sector.setName(readStringCell(row.getCell(0)));
-                sector.setQuantityMillisMaximum(parsePercentageMillis(readDoubleCell(row.getCell(1))));
-                sectorList.add(sector);
-                sectorMap.put(sector.getName(), sector);
-            }
-            solution.setSectorList(sectorList);
-        }
+		private void readSectorList() throws IOException {
+			Sheet sheet = readSheet(2, "Sectors");
+			Row headerRow = sheet.getRow(0);
+			assertCellConstant(headerRow.getCell(0), "Name");
+			assertCellConstant(headerRow.getCell(1), "Quantity maximum");
+			List<Sector> sectorList = new ArrayList<>();
+			{
+				var sector = new Sector();
+				sector.setId(0L);
+				sector.setName("Tech");
+				sector.setQuantityMillisMaximum(300L);
+				sectorList.add(sector);
+			}
+			{
+				var sector = new Sector();
+				sector.setId(1L);
+				sector.setName("Cars");
+				sector.setQuantityMillisMaximum(1000L);
+				sectorList.add(sector);
+			}
+			{
+				var sector = new Sector();
+				sector.setId(2L);
+				sector.setName("Food");
+				sector.setQuantityMillisMaximum(40L);
+				sectorList.add(sector);
+			}
+			for (var sector : sectorList) {
+				this.sectorMap.put(sector.getName(), sector);
+			}
+			solution.setSectorList(sectorList);
+		}
 
-        private void readAssetClassList() throws IOException {
-            Sheet sheet = readSheet(3, "AssetClasses");
-            final int ASSET_CLASS_PROPERTIES_COUNT = 6;
-            Row groupHeaderRow = sheet.getRow(0);
-            assertCellConstant(groupHeaderRow.getCell(0), "Asset class");
-            assertCellConstant(groupHeaderRow.getCell(ASSET_CLASS_PROPERTIES_COUNT), "Correlation");
-            Row headerRow = sheet.getRow(1);
-            assertCellConstant(headerRow.getCell(0), "ID");
-            assertCellConstant(headerRow.getCell(1), "Name");
-            assertCellConstant(headerRow.getCell(2), "Region");
-            assertCellConstant(headerRow.getCell(3), "Sector");
-            assertCellConstant(headerRow.getCell(4), "Expected return");
-            assertCellConstant(headerRow.getCell(5), "Standard deviation");
+		private void readAssetClassList() throws IOException {
+			Map<Long, AssetClass> assets = new HashMap<>();
+			{
+				var asset = new AssetClass();
+				asset.setId(1L);
+				asset.setName("Red Hat, Inc.");
+				asset.setRegion(this.regionMap.get("Global"));
+				asset.setSector(this.sectorMap.get("Tech"));
+				asset.setExpectedReturnMillis(1365);
+				asset.setStandardDeviationRiskMillis(2913);
+				assets.put(asset.getId(), asset);
+			}
+			{
+				var asset = new AssetClass();
+				asset.setId(2L);
+				asset.setName("Google Inc.");
+				asset.setRegion(this.regionMap.get("Global"));
+				asset.setSector(this.sectorMap.get("Tech"));
+				asset.setExpectedReturnMillis(1567);
+				asset.setStandardDeviationRiskMillis(2158);
+				assets.put(asset.getId(), asset);
+			}
+			{
+				var asset = new AssetClass();
+				asset.setId(3L);
+				asset.setName("Oracle Corporation");
+				asset.setRegion(this.regionMap.get("Global"));
+				asset.setSector(this.sectorMap.get("Tech"));
+				asset.setExpectedReturnMillis(1232);
+				asset.setStandardDeviationRiskMillis(2171);
+				assets.put(asset.getId(), asset);
+			}
+			{
+				var asset = new AssetClass();
+				asset.setId(4L);
+				asset.setName("Apple Inc.");
+				asset.setRegion(this.regionMap.get("Global"));
+				asset.setSector(this.sectorMap.get("Tech"));
+				asset.setExpectedReturnMillis(2884);
+				asset.setStandardDeviationRiskMillis(2414);
+				assets.put(asset.getId(), asset);
+			}
+			{
+				var asset = new AssetClass();
+				asset.setId(5L);
+				asset.setName("Microsoft Corporation");
+				asset.setRegion(this.regionMap.get("Global"));
+				asset.setSector(this.sectorMap.get("Tech"));
+				asset.setExpectedReturnMillis(1798);
+				asset.setStandardDeviationRiskMillis(2070);
+				assets.put(asset.getId(), asset);
+			}
+			{
+				var asset = new AssetClass();
+				asset.setId(6L);
+				asset.setName("Tesla Motors, Inc.");
+				asset.setRegion(this.regionMap.get("Global"));
+				asset.setSector(this.sectorMap.get("Cars"));
+				asset.setExpectedReturnMillis(5473);
+				asset.setStandardDeviationRiskMillis(5398);
+				assets.put(asset.getId(), asset);
+			}
+			{
+				var asset = new AssetClass();
+				asset.setId(7L);
+				asset.setName("Ford Motor Company");
+				asset.setRegion(this.regionMap.get("Global"));
+				asset.setSector(this.sectorMap.get("Cars"));
+				asset.setExpectedReturnMillis(105);
+				asset.setStandardDeviationRiskMillis(2592);
+				assets.put(asset.getId(), asset);
+			}
+			{
+				var asset = new AssetClass();
+				asset.setId(8L);
+				asset.setName("Toyota Motor Corp Ltd Ord");
+				asset.setRegion(this.regionMap.get("Global"));
+				asset.setSector(this.sectorMap.get("Tech"));
+				asset.setExpectedReturnMillis(1363);
+				asset.setStandardDeviationRiskMillis(1920);
+				assets.put(asset.getId(), asset);
+			}
+			{
+				var asset = new AssetClass();
+				asset.setId(9L);
+				asset.setName("General Motors Company");
+				asset.setRegion(this.regionMap.get("Global"));
+				asset.setSector(this.sectorMap.get("Tech"));
+				asset.setExpectedReturnMillis(210);
+				asset.setStandardDeviationRiskMillis(2959);
+				assets.put(asset.getId(), asset);
+			}
+			{
+				var asset = new AssetClass();
+				asset.setId(10L);
+				asset.setName("Starbucks Corporation");
+				asset.setRegion(this.regionMap.get("Global"));
+				asset.setSector(this.sectorMap.get("Food"));
+				asset.setExpectedReturnMillis(3321);
+				asset.setStandardDeviationRiskMillis(1974);
+				assets.put(asset.getId(), asset);
+			}
+			{
+				var asset = new AssetClass();
+				asset.setId(11L);
+				asset.setName("McDonald's Corporation");
+				asset.setRegion(this.regionMap.get("Global"));
+				asset.setSector(this.sectorMap.get("Food"));
+				asset.setExpectedReturnMillis(805);
+				asset.setStandardDeviationRiskMillis(1134);
+				assets.put(asset.getId(), asset);
+			}
 
-            int assetClassListSize = headerRow.getPhysicalNumberOfCells() - ASSET_CLASS_PROPERTIES_COUNT;
-            List<AssetClass> assetClassList = new ArrayList<>(assetClassListSize);
-            Map<Long, AssetClass> idToAssetClassMap = new HashMap<>(assetClassListSize);
-            for (int i = 0; i < assetClassListSize; i++) {
-                AssetClass assetClass = new AssetClass();
-                assetClass.setId(readLongCell(headerRow.getCell(ASSET_CLASS_PROPERTIES_COUNT + i)));
-                assetClassList.add(assetClass);
-                AssetClass old = idToAssetClassMap.put(assetClass.getId(), assetClass);
-                if (old != null) {
-                    throw new IllegalStateException("The assetClass id (" + assetClass.getId() + ") is not unique.");
-                }
-            }
-            for (Row row : sheet) {
-                if (row.getRowNum() < 2) {
-                    continue;
-                }
-                if (row.getCell(0) == null && row.getCell(1) == null && row.getCell(2) == null
-                        && row.getCell(3) == null && row.getCell(4) == null && row.getCell(5) == null) {
-                    continue;
-                }
-                if (row.getPhysicalNumberOfCells() != (ASSET_CLASS_PROPERTIES_COUNT + assetClassListSize)) {
-                    throw new IllegalArgumentException("The row (" + row.getRowNum() + ") has "
-                            + row.getPhysicalNumberOfCells() + " cells, but is expected to have "
-                            + (ASSET_CLASS_PROPERTIES_COUNT + assetClassListSize) + " cells instead.");
-                }
-                long id = readLongCell(row.getCell(0));
-                AssetClass assetClass = idToAssetClassMap.get(id);
-                if (assetClass == null) {
-                    throw new IllegalStateException("The row (" + row.getRowNum()
-                            + ") has an assetClass id (" + id + ") that is not in the header.");
-                }
-                assetClass.setName(readStringCell(row.getCell(1)));
-                String regionName = readStringCell(row.getCell(2));
-                Region region = regionMap.get(regionName);
-                if (region == null) {
-                    throw new IllegalStateException("The row (" + row.getRowNum()
-                            + ") has a region (" + regionName + ") that is not in the regions sheet.");
-                }
-                assetClass.setRegion(region);
-                String sectorName = readStringCell(row.getCell(3));
-                Sector sector = sectorMap.get(sectorName);
-                if (sector == null) {
-                    throw new IllegalStateException("The row (" + row.getRowNum()
-                            + ") has a sector (" + sectorName + ") that is not in the sectors sheet.");
-                }
-                assetClass.setSector(sector);
-                assetClass.setExpectedReturnMillis(parsePercentageMillis(readDoubleCell(row.getCell(4))));
-                assetClass.setStandardDeviationRiskMillis(parsePercentageMillis(readDoubleCell(row.getCell(5))));
-                Map<AssetClass, Long> correlationMillisMap = new LinkedHashMap<>(assetClassListSize);
-                for (int i = 0; i < assetClassListSize; i++) {
-                    AssetClass other = assetClassList.get(i);
-                    long correlationMillis = parsePercentageMillis(
-                            readDoubleCell(row.getCell(ASSET_CLASS_PROPERTIES_COUNT + i)));
-                    correlationMillisMap.put(other, correlationMillis);
-                }
-                assetClass.setCorrelationMillisMap(correlationMillisMap);
-            }
-            solution.setAssetClassList(assetClassList);
-        }
+			{
+				var asset = assets.get(1L);
+				Map<AssetClass, Long> map = new HashMap<>();
+				map.put(asset, 0L);
+				map.put(assets.get(2L), 5L);
+				map.put(assets.get(3L), 6L);
+				map.put(assets.get(4L), 13L);
+				map.put(assets.get(5L), 14L);
+				map.put(assets.get(6L), 23L);
+				map.put(assets.get(7L), 21L);
+				map.put(assets.get(8L), 8L);
+				map.put(assets.get(9L), 32L);
+				map.put(assets.get(10L), 33L);
+				map.put(assets.get(11L), 0L);
+				asset.setCorrelationMillisMap(map);
+			}
+			{
+				var asset = assets.get(2L);
+				Map<AssetClass, Long> map = new HashMap<>();
+				map.put(assets.get(1L), 5L);
+				map.put(asset, 0L);
+				map.put(assets.get(3L), 5L);
+				map.put(assets.get(4L), 26L);
+				map.put(assets.get(5L), 18L);
+				map.put(assets.get(6L), 10L);
+				map.put(assets.get(7L), 8L);
+				map.put(assets.get(8L), 20L);
+				map.put(assets.get(9L), 21L);
+				map.put(assets.get(10L), 21L);
+				map.put(assets.get(11L), 21L);
+				asset.setCorrelationMillisMap(map);
+			}
+			{
+				var asset = assets.get(3L);
+				Map<AssetClass, Long> map = new HashMap<>();
+				map.put(assets.get(1L), 60L);
+				map.put(assets.get(2L), 5L);
+				map.put(asset, 0L);
+				map.put(assets.get(4L), 19L);
+				map.put(assets.get(5L), 33L);
+				map.put(assets.get(6L), 14L);
+				map.put(assets.get(7L), 42L);
+				map.put(assets.get(8L), 19L);
+				map.put(assets.get(9L), 50L);
+				map.put(assets.get(10L), 17L);
+				map.put(assets.get(11L), -1L);
+				asset.setCorrelationMillisMap(map);
+			}
+			{
+				var asset = assets.get(4L);
+				Map<AssetClass, Long> map = new HashMap<>();
+				map.put(assets.get(1L), 13L);
+				map.put(assets.get(2L), 26L);
+				map.put(assets.get(3L), 19L);
+				map.put(asset, 0L);
+				map.put(assets.get(5L), 27L);
+				map.put(assets.get(6L), 1L);
+				map.put(assets.get(7L), 15L);
+				map.put(assets.get(8L), 18L);
+				map.put(assets.get(9L), 25L);
+				map.put(assets.get(10L), 23L);
+				map.put(assets.get(11L), 3L);
+				asset.setCorrelationMillisMap(map);
+			}
+			{
+				var asset = assets.get(5L);
+				Map<AssetClass, Long> map = new HashMap<>();
+				map.put(assets.get(1L), 14L);
+				map.put(assets.get(2L), 18L);
+				map.put(assets.get(3L), 33L);
+				map.put(assets.get(4L), 27L);
+				map.put(asset, 0L);
+				map.put(assets.get(6L), 18L);
+				map.put(assets.get(7L), 29L);
+				map.put(assets.get(8L), 25L);
+				map.put(assets.get(9L), 31L);
+				map.put(assets.get(10L), 17L);
+				map.put(assets.get(11L), 16L);
+				asset.setCorrelationMillisMap(map);
+			}
+			{
+				var asset = assets.get(6L);
+				Map<AssetClass, Long> map = new HashMap<>();
+				map.put(assets.get(1L), 23L);
+				map.put(assets.get(2L), 10L);
+				map.put(assets.get(3L), 14L);
+				map.put(assets.get(4L), 1L);
+				map.put(assets.get(5L), 18L);
+				map.put(asset, 0L);
+				map.put(assets.get(7L), 32L);
+				map.put(assets.get(8L), 16L);
+				map.put(assets.get(9L), 23L);
+				map.put(assets.get(10L), 24L);
+				map.put(assets.get(11L), -5L);
+				asset.setCorrelationMillisMap(map);
+			}
+			{
+				var asset = assets.get(7L);
+				Map<AssetClass, Long> map = new HashMap<>();
+				map.put(assets.get(1L), 21L);
+				map.put(assets.get(2L), 8L);
+				map.put(assets.get(3L), 42L);
+				map.put(assets.get(4L), 15L);
+				map.put(assets.get(5L), 29L);
+				map.put(assets.get(6L), 32L);
+				map.put(asset, 0L);
+				map.put(assets.get(8L), 24L);
+				map.put(assets.get(9L), 83L);
+				map.put(assets.get(10L), 36L);
+				map.put(assets.get(11L), 10L);
+				asset.setCorrelationMillisMap(map);
+			}
+			{
+				var asset = assets.get(8L);
+				Map<AssetClass, Long> map = new HashMap<>();
+				map.put(assets.get(1L), 8L);
+				map.put(assets.get(2L), 20L);
+				map.put(assets.get(3L), 19L);
+				map.put(assets.get(4L), 18L);
+				map.put(assets.get(5L), 25L);
+				map.put(assets.get(6L), 16L);
+				map.put(assets.get(7L), 24L);
+				map.put(asset, 0L);
+				map.put(assets.get(9L), 36L);
+				map.put(assets.get(10L), 32L);
+				map.put(assets.get(11L), 10L);
+				asset.setCorrelationMillisMap(map);
+			}
+			{
+				var asset = assets.get(9L);
+				Map<AssetClass, Long> map = new HashMap<>();
+				map.put(assets.get(1L), 32L);
+				map.put(assets.get(2L), 21L);
+				map.put(assets.get(3L), 50L);
+				map.put(assets.get(4L), 25L);
+				map.put(assets.get(5L), 32L);
+				map.put(assets.get(6L), 23L);
+				map.put(assets.get(7L), 83L);
+				map.put(assets.get(8L), 36L);
+				map.put(asset, 0L);
+				map.put(assets.get(10L), 30L);
+				map.put(assets.get(11L), 9L);
+				asset.setCorrelationMillisMap(map);
+			}
+			{
+				var asset = assets.get(10L);
+				Map<AssetClass, Long> map = new HashMap<>();
+				map.put(assets.get(1L), 33L);
+				map.put(assets.get(2L), 21L);
+				map.put(assets.get(3L), 17L);
+				map.put(assets.get(4L), 23L);
+				map.put(assets.get(5L), 17L);
+				map.put(assets.get(6L), 24L);
+				map.put(assets.get(7L), 36L);
+				map.put(assets.get(8L), 32L);
+				map.put(assets.get(9L), 30L);
+				map.put(asset, 0L);
+				map.put(assets.get(11L), 31L);
+				asset.setCorrelationMillisMap(map);
+			}
+			{
+				var asset = assets.get(11L);
+				Map<AssetClass, Long> map = new HashMap<>();
+				map.put(assets.get(1L), 0L);
+				map.put(assets.get(2L), 21L);
+				map.put(assets.get(3L), -1L);
+				map.put(assets.get(4L), 3L);
+				map.put(assets.get(5L), 16L);
+				map.put(assets.get(6L), -5L);
+				map.put(assets.get(7L), 10L);
+				map.put(assets.get(8L), 10L);
+				map.put(assets.get(9L), 9L);
+				map.put(assets.get(10L), 31L);
+				map.put(asset, 0L);
+				asset.setCorrelationMillisMap(map);
+			}
+			solution.setAssetClassList(new ArrayList<>(assets.values()));
+		}
 
-        private void createAssetClassAllocationList() {
-            List<AssetClass> assetClassList = solution.getAssetClassList();
-            List<AssetClassAllocation> assetClassAllocationList = new ArrayList<>(assetClassList.size());
-            for (AssetClass assetClass : assetClassList) {
-                AssetClassAllocation allocation = new AssetClassAllocation();
-                allocation.setId(assetClass.getId());
-                allocation.setAssetClass(assetClass);
-                assetClassAllocationList.add(allocation);
-            }
-            solution.setAssetClassAllocationList(assetClassAllocationList);
-        }
+		private void createAssetClassAllocationList() {
+			List<AssetClass> assetClassList = solution.getAssetClassList();
+			List<AssetClassAllocation> assetClassAllocationList = new ArrayList<>(assetClassList.size());
+			for (AssetClass assetClass : assetClassList) {
+				AssetClassAllocation allocation = new AssetClassAllocation();
+				allocation.setId(assetClass.getId());
+				allocation.setAssetClass(assetClass);
+				assetClassAllocationList.add(allocation);
+			}
+			solution.setAssetClassAllocationList(assetClassAllocationList);
+		}
 
-        protected long parsePercentageMillis(double numericValue) {
-            return (long) (numericValue * 1000.0);
-        }
-
-        protected long parsePercentageMillis(String token) {
-            BigDecimal millis;
-            if (token.endsWith("%")) {
-                millis = new BigDecimal(token.substring(0, token.length() - 1)).multiply(new BigDecimal(10L));
-            } else {
-                millis = new BigDecimal(token).multiply(new BigDecimal(1000L));
-            }
-            return millis.longValueExact();
-        }
-
-    }
+	}
 
 }

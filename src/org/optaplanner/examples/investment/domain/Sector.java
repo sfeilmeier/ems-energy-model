@@ -19,41 +19,38 @@ package org.optaplanner.examples.investment.domain;
 import org.optaplanner.examples.common.domain.AbstractPersistable;
 import org.optaplanner.examples.investment.domain.util.InvestmentNumericUtil;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-
-@XStreamAlias("Sector")
 public class Sector extends AbstractPersistable {
 
-    private String name;
-    private Long quantityMillisMaximum; // In millis (so multiplied by 1000)
+	private String name;
+	private Long quantityMillisMaximum; // In millis (so multiplied by 1000)
 
-    public String getName() {
-        return name;
-    }
+	public String getName() {
+		return name;
+	}
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-    public Long getQuantityMillisMaximum() {
-        return quantityMillisMaximum;
-    }
+	public Long getQuantityMillisMaximum() {
+		return quantityMillisMaximum;
+	}
 
-    public void setQuantityMillisMaximum(Long quantityMillisMaximum) {
-        this.quantityMillisMaximum = quantityMillisMaximum;
-    }
+	public void setQuantityMillisMaximum(Long quantityMillisMaximum) {
+		this.quantityMillisMaximum = quantityMillisMaximum;
+	}
 
-    // ************************************************************************
-    // Complex methods
-    // ************************************************************************
+	// ************************************************************************
+	// Complex methods
+	// ************************************************************************
 
-    public String getQuantityMaximumLabel() {
-        return InvestmentNumericUtil.formatMillisAsPercentage(quantityMillisMaximum);
-    }
+	public String getQuantityMaximumLabel() {
+		return InvestmentNumericUtil.formatMillisAsPercentage(quantityMillisMaximum);
+	}
 
-    @Override
-    public String toString() {
-        return name;
-    }
+	@Override
+	public String toString() {
+		return name;
+	}
 
 }

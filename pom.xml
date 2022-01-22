@@ -27,25 +27,5 @@
 			<artifactId>optaplanner-examples</artifactId>
 			<version>8.16.0.Final</version>
 		</dependency>
-		<dependency>
-			<groupId>org.optaplanner</groupId>
-			<artifactId>optaplanner-persistence-xstream</artifactId>
-			<version>8.16.0.Final</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi</artifactId>
-			<version>5.2.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.optaplanner</groupId>
-			<artifactId>optaplanner-benchmark</artifactId>
-			<version>8.16.0.Final</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi-ooxml</artifactId>
-			<version>5.2.0</version>
-		</dependency>
 	</dependencies>
 </project>
