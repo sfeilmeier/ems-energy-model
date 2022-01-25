@@ -3,6 +3,7 @@ package io.openems.controller.emsig.ojalgo;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_INITIAL_ENERGY;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_CHARGE;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_DISCHARGE;
+import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_CHARGE_DIFFERENCE;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_ENERGY;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_MIN_ENERGY;
 import static io.openems.controller.emsig.ojalgo.Constants.GRID_BUY_COST;
@@ -12,15 +13,17 @@ import static io.openems.controller.emsig.ojalgo.Constants.GRID_SELL_REVENUE;
 import static io.openems.controller.emsig.ojalgo.Constants.MINUTES_PER_PERIOD;
 import static io.openems.controller.emsig.ojalgo.Constants.PV_POWER;
 import static io.openems.controller.emsig.ojalgo.Constants.HH_LOAD;
+import static io.openems.controller.emsig.ojalgo.Constants.EV_AVAIL;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_CHARGE_EFFICIENCY;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_DISCHARGE_EFFICIENCY;
 import static io.openems.controller.emsig.ojalgo.Constants.NO_OF_PERIODS;
-//import static io.openems.controller.emsig.ojalgo.Constants.EV_INITIAL_ENERGY;
-//import static io.openems.controller.emsig.ojalgo.Constants.EV_MAX_ENERGY;
-//import static io.openems.controller.emsig.ojalgo.Constants.EV_REQUIRED_ENERGY;
-//import static io.openems.controller.emsig.ojalgo.Constants.EV_MIN_CHARGE;
-//import static io.openems.controller.emsig.ojalgo.Constants.EV_MAX_CHARGE;
-//import static io.openems.controller.emsig.ojalgo.Constants.EV_CHARGE_EFFICIENCY;
+import static io.openems.controller.emsig.ojalgo.Constants.EV_INITIAL_ENERGY;
+import static io.openems.controller.emsig.ojalgo.Constants.EV_MAX_ENERGY;
+import static io.openems.controller.emsig.ojalgo.Constants.EV_REQUIRED_ENERGY;
+import static io.openems.controller.emsig.ojalgo.Constants.EV_MIN_CHARGE;
+import static io.openems.controller.emsig.ojalgo.Constants.EV_MAX_CHARGE;
+import static io.openems.controller.emsig.ojalgo.Constants.EV_CHARGE_EFFICIENCY;
+
 
 
 
@@ -58,7 +61,12 @@ public class EnergyModel {
 			 * Energy Storage
 			 */
 			// upper and lower bounds for charge and discharge
+			// Upper bound for charge is given by the minimum
+			// of ESS_MAX_CHARGE and p.power.prod for each period p.
+			// This way, the ESS is not charged with power bought 
+			// from the grid (at least in the evening and in the morning).
 			// 0 = ess.power - ess.discharge.power + ess.charge.power
+			
 			p.ess.power = model.addVariable("ESS_" + p.name + "_Power") //
 					.lower(ESS_MAX_CHARGE * -1) //
 					.upper(ESS_MAX_DISCHARGE);
@@ -67,7 +75,7 @@ public class EnergyModel {
 					.upper(ESS_MAX_DISCHARGE);
 			p.ess.charge.power = model.addVariable("ESS_" + p.name + "_Charge_Power") //
 					.lower(0) //
-					.upper(ESS_MAX_CHARGE);
+					.upper(Math.min(ESS_MAX_CHARGE, p.pv.power.prod));
 			model.addExpression("ESS_" + p.name + "_ChargeDischargePower_Expr") //
 					.set(p.ess.power, ONE) //
 					.set(p.ess.discharge.power, ONE.negate()) //
@@ -114,43 +122,82 @@ public class EnergyModel {
 						.set(p.ess.discharge.power, MINUTES_PER_PERIOD * -1 * ESS_DISCHARGE_EFFICIENCY /100) //
 						.set(p.ess.charge.power, MINUTES_PER_PERIOD*ESS_CHARGE_EFFICIENCY /100) //
 						.set(p.ess.energy, ONE.negate()) //
-						.level(0); // ESS_EFFICIENCY
+						.level(0); 
 			}
-			//  p.ess.energy = periods[i-1].ess.energy - p.ess.power*MINUTES_PER_PERIOD - ESS_EFFICIENCY*60			
+			//  p.ess.energy = periods[i-1].ess.energy - p.ess.power*MINUTES_PER_PERIOD - ESS_EFFICIENCY*60		
+			
+			// Evenly distributed charging
+//			if (i == 0) {
+//				p.ess.charge.power.upper(ESS_MAX_CHARGE_DIFFERENCE);
+//		} else {
+//			model.addExpression(p.name + "_Charge_Diff_Max") //
+//				.set(periods[i].ess.charge.power , ONE) //
+//				.set(periods[i-1].ess.charge.power, ONE.negate()) //
+//				.lower(-1 * ESS_MAX_CHARGE_DIFFERENCE) //
+//				.upper(ESS_MAX_CHARGE_DIFFERENCE);
+//		}
 
 			/*
 			 * EV 
 			 */
-			// EV power
-			// For now, we impose no assumptions
-//			p.ev.charge.power = model.addVariable("EV_" + p.name + "_Charge_Power") //
-//					.lower(0) //
-//					.upper(EV_MAX_CHARGE);
-//			
-			// EV mode
-			// either allow no charge power (if charge mode = 0) or allow
+			// EV power and EV mode
+			// If the EV is not available, isCharged = 1,  chargePower = 0
+			// Either allow no charge power (if isCharged = 1) or allow
 			// a charge power in [EV_MIN_CHARGE, EV_MAX_CHARGE] 
-			// TODO will probably fail, since the mode takes values between 0 and 1 as well
-//			p.ev.charge.mode = model.addVariable("EV_" + p.name + "_Charge_Mode") //
+			p.ev.charge.power = model.addVariable("EV_" + p.name + "_Charge_Power") //
+					.lower(0) //
+					.upper(EV_MAX_CHARGE);
+
+//			p.ev.isCharged = model.addVariable("EV_" + p.name + "_Charge_Mode") //
 //					.lower(0) //
-//					.upper(1);
-//			model.addExpression("EV_" + p.name + "_Charge_Mode_Expr") //
-//				.set(p.ev.charge.mode, EV_MAX_CHARGE) //
-//				.set(p.ev.charge.power, ONE) //
-//				.lower(EV_MIN_CHARGE) //
-//				.upper(EV_MAX_CHARGE);
+//					.upper(1) //
+//					.integer(true); //
 			
-					
+			p.ev.isCharged = model.addVariable("EV_" + p.name + "_Charge_Mode") //
+					.binary();
+			
+//			 if (EV_AVAIL[i] == 0) {
+//				 p.ev.charge.power.level(0);
+//				 p.ev.isCharged.level(1);
+//			 } else {
+//				 	model.addExpression("EV_" + p.name + "_Charge_Power_Expr") //
+//				 		.set(p.ev.isCharged, EV_MAX_CHARGE) //
+//				 		.set(p.ev.charge.power, ONE) //
+//				 		.lower(EV_MIN_CHARGE) //
+//				 		.upper(EV_MAX_CHARGE);
+//			 }
+//			 
+			 // Instead of if/else statement:
+			 	model.addExpression("EV_" + p.name + "_Charge_Decision") //
+		 		.set(p.ev.isCharged, ONE) //
+		 		.lower(1 - EV_AVAIL[i]);
+			 	
+			 	model.addExpression("EV_" + p.name + "_Charge_Power_Expr") //
+		 		.set(p.ev.isCharged, EV_MAX_CHARGE) //
+		 		.set(p.ev.charge.power, ONE) //
+		 		.lower(EV_MIN_CHARGE) //
+		 		.upper(EV_MAX_CHARGE);
+		
+ 					
 			// EV energy
 			// p.ev.energy = p.ev.charge.power*MINUTES_PER_PERIODS
 			// In particular, assume a minimum charge power of 100
-//			p.ev.energy = model.addVariable("EV_" + p.name + "Energy") //
-//					.lower(0) //
-//					.upper(EV_MAX_ENERGY * 60); // [Wmin]
-//			model.addExpression(p.name + "Energy") //
-//				.set(p.ev.energy, ONE) //
-//				.set(p.ev.charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-//				.level(0);
+			p.ev.energy = model.addVariable("EV_" + p.name + "Energy") //
+					.lower(0) //
+					.upper(EV_MAX_ENERGY * 60); // [Wmin]
+			if (i == 0) {
+			model.addExpression(p.name + "Energy") //
+				.set(p.ev.energy, ONE) //
+				.set(p.ev.charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
+				.level(EV_INITIAL_ENERGY *60);
+			} else {
+				model.addExpression(p.name + "Energy") //
+				.set(p.ev.energy, ONE.negate()) //
+				.set(p.ev.charge.power, MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
+				.set(periods[i-1].ev.energy, ONE) //
+				.level(0);
+			}
+			
 			/*
 			 * Grid
 			 */
@@ -160,7 +207,7 @@ public class EnergyModel {
 			model.addExpression(p.name + "_Power_Balance") //
 			.set(p.ess.power, ONE) //
 			.set(p.grid.power, ONE) //
-		//	.set(p.ev.charge.power, ONE.negate())
+			.set(p.ev.charge.power, ONE.negate())
 			.level(p.hh.power.cons - p.pv.power.prod);
 			p.grid.buy.power = model.addVariable("Grid_" + p.name + "_Buy_Power") //
 					.lower(0) //
@@ -173,6 +220,21 @@ public class EnergyModel {
 					.set(p.grid.buy.power, ONE.negate()) //
 					.set(p.grid.sell.power, ONE) //
 					.level(0);
+			
+			// We do not allow gridBuy while the EV is charged
+			p.grid.isBuy = model.addVariable("Grid_" + p.name + "isBuy") //
+					.binary();
+			
+			model.addExpression(p.name + "_Grid_Buy_XOR_EV_Charge_Expr") //
+				.set(p.ev.isCharged, ONE) //
+				.set(p.grid.isBuy, ONE) //
+				.lower(1);
+			
+			model.addExpression(p.name + "_Grid_Buy_XOR_EV_Charge2_Expr") //
+				.set(p.grid.isBuy, GRID_BUY_LIMIT) //
+				.set(p.grid.buy.power, ONE) //
+				.lower(0) //
+				.upper(GRID_BUY_LIMIT);
 		
 			p.grid.buy.cost = GRID_BUY_COST[i];
 			p.grid.sell.revenue = GRID_SELL_REVENUE[i];
@@ -185,7 +247,7 @@ public class EnergyModel {
 		for (int i = 0; i < this.periods.length; i++) {
 			Period p = this.periods[i];
 			System.out.println(
-					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5d | %s %5d", i, //
+					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f  | %s %5d | %s %5d", i, //
 							"Grid", p.grid.power.getValue().doubleValue(), //
 							"GridBuy", p.grid.buy.power.getValue().doubleValue(), //
 							"GridSell", p.grid.sell.power.getValue().doubleValue(), //
@@ -193,9 +255,11 @@ public class EnergyModel {
 							"ESSCharge", p.ess.charge.power.getValue().doubleValue(), //
 							"ESSDischarge", p.ess.discharge.power.getValue().doubleValue(), //
 							"ESSEnergy", p.ess.energy.getValue().doubleValue() / 60, //
+							"EVChargeMode", p.ev.isCharged.getValue().doubleValue(), //
+							"EVPower", p.ev.charge.power.getValue().doubleValue(), //
+							"EVEnergy", p.ev.energy.getValue().doubleValue() / 60,
 							"PVPower", p.pv.power.prod, //
 							"HHLoad", p.hh.power.cons//
-							//"EVPower", p.ev.charge.power.getValue().doubleValue()
 					));
 		}
 	}
