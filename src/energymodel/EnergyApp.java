@@ -209,15 +209,16 @@ public class EnergyApp {
 //				minRequiredCharge.upper((EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60);
 //				minRequiredCharge.level(EV_REQUIRED_ENERGY * 60);
 			
-		em.model.addExpression("Minimum_Required_Charging") //
-			.set(em.periods[NO_OF_PERIODS-1].ev.energy,  ONE) //
-			.lower(EV_REQUIRED_ENERGY*60);
+//		em.model.addExpression("Minimum_Required_Charging") //
+//			.set(em.periods[NO_OF_PERIODS-1].ev.energy,  ONE) //
+//			.lower(EV_REQUIRED_ENERGY*60);
 			
 
 		em.model.minimise();
 		// Result result = em.model.minimise();
 
 		return em;
+		
 	}
 
 	/**
@@ -252,10 +253,10 @@ public class EnergyApp {
 //		for (int k = 96; k < index; k++) {
 //			hhSum += HH_LOAD[k];
 //		}
-		// At the end of the day battery must be xy% full 
-//			em.model.addExpression("End of the Day") //
+		// At the end of the day we want a SoC of xy% 
+//			em.model.addExpression("ESS_Schedule") //
 //				.set(em.periods[95].ess.energy, ONE) // alternatively periods[60]
-//				.lower(ESS_MAX_ENERGY * 60 *10/100); // in Wmin
+//				.lower(ESS_MAX_ENERGY * 60 *25/100); // in Wmin
 			//	.lower((hhSum - pvSum)*15); // in Wmin
 //		}	
 //		// At end of HLZF2 battery is expected to be empty.
@@ -264,17 +265,25 @@ public class EnergyApp {
 //				.level(ESS_MAX_ENERGY *60 *20/100);
 		
 		
-		// At the end of a predefined period, the EV has to be fully charged.
-			em.model.addExpression("EV_Schedule") //
-				.set(em.periods[90].ev.energy, ONE) //
-				.level(EV_MAX_ENERGY*60);
-//
+//		// At the end of the day the EV has to be fully charged.
+//			em.model.addExpression("EV_Schedule") //
+//				.set(em.periods[95].ev.energy, ONE) //
+//				.level(EV_MAX_ENERGY*60);
+		
+		// At the end of the day the EVs have to be fully charged.
+		em.model.addExpression("EV0_Schedule") //
+			.set(em.periods[95].evs.get(0).energy, ONE) //
+			.level(EV_MAX_ENERGY*60);
+		em.model.addExpression("EV1_Schedule") //
+			.set(em.periods[95].evs.get(1).energy, ONE) //
+			.lower(EV_MAX_ENERGY*60*80/100);
+
 //		// TODO Grid-Sell can never be more than Production. This simple model assumes
 //		// no production, so Grid-Sell must be zero - at least outside of HLZF period.
 //		for (int i = 0; i < 6; i++) { // alternatively i = 0; i <19; i++
 //			em.periods[i].grid.sell.power.upper(GRID_SELL_LIMIT);
 //		}
-//		for (int i = 18; i < 23; i++) { // TODO why 18? 
+//		for (int i = 18; i < 23; i++) { 
 //			em.periods[i].grid.sell.power.upper(GRID_SELL_LIMIT);
 //		}
 //				

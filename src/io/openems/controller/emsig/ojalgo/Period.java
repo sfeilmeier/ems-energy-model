@@ -1,5 +1,8 @@
 package io.openems.controller.emsig.ojalgo;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Period {
 
 	private final static int MINUTES_PER_DAY = 1440;
@@ -29,7 +32,15 @@ public class Period {
 	public final EnergyStorage ess = new EnergyStorage();
 	public final PV pv = new PV();
 	public final HouseHold hh = new HouseHold();
-	 public final EV ev = new EV();
+	public final EV ev = new EV();
+	
+	// If we want to have multiple EVs
+//	public final EV ev1 = new EV();
+//	public final EV ev2 = new EV();
+	public final List<EV> evs = new ArrayList<EV>();
+	
+
+
 
 	private Period(String name) {
 		this.name = name;

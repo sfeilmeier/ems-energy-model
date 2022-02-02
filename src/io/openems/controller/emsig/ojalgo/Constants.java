@@ -13,11 +13,11 @@ public class Constants {
 	public final static int GRID_SELL_LIMIT = 30000; // [W]
 	public final static int GRID_BUY_LIMIT = 30000; // [W]
 
-	public final static int ESS_INITIAL_ENERGY = 10000; // [Wh] //
+	public final static int ESS_INITIAL_ENERGY = 5000; // [Wh] //
 	public final static int ESS_MIN_ENERGY = 0; // [Wh]
 	public final static int ESS_MAX_ENERGY = 44000; // [Wh] Fems4: 44000
 	public final static int ESS_MAX_CHARGE = 10000; // [W]
-	public final static int ESS_MAX_CHARGE_DIFFERENCE = 2500; // [W]
+	public final static int ESS_MAX_CHARGE_DIFFERENCE = 3000; // [W]
 	public final static int ESS_MAX_DISCHARGE = 10000; // [W]
 	public final static int ESS_CHARGE_EFFICIENCY = 95; // [%, 0-100] 
 	public final static int ESS_DISCHARGE_EFFICIENCY = 105; // [%, 100-200] 
@@ -28,39 +28,66 @@ public class Constants {
 	// available time for charging, minimum and maximum required energy to be
 	// charged (add variables), potentially hardware-specific charging limitations,
 	// and a charging command
-	public final static int EV_INITIAL_ENERGY = 2000; // [Wh] 
-	public final static int EV_MAX_ENERGY = 50000; // [Wh] Tesla 3: 50 - 75 kWh
-	public final static int EV_REQUIRED_ENERGY = 15000; // [Wh] 
+	public final static int EV_INITIAL_ENERGY = 10000; // [Wh] 
+	public final static int EV_MAX_ENERGY = 20000; // [Wh] Tesla 3: 50 - 75 kWh
+	public final static int EV_REQUIRED_ENERGY = 16000; // [Wh] 
 	public final static int EV_MIN_CHARGE = 4200; // [W] (3 phase)
 	public final static int EV_MAX_CHARGE = 11000; // [W] Hardy Barth cpm 2 or Keba 4: 11000 (3 phase)
 	public final static int EV_CHARGE_EFFICIENCY = 90; // [%, 0-100]
 	
 	// The availability of the EV is provided by the customer
-	public final static int[] EV_AVAIL = {
-			1, 1, 1, 1, 
-			1, 1, 1, 1,
-			1, 1, 1, 1, 
-			1, 1, 1, 1, 
-			1, 1, 1, 1, 
-			1, 1, 1, 1, 
-			1, 1, 1, 0, 
-			0, 0, 0, 0, 
-			0, 0, 0, 0,
-			0, 0, 0, 0,
-			0, 0, 0, 0,
-			0, 0, 0, 0,
-			0, 0, 0, 0,
-			0, 0, 0, 0,
-			0, 0, 0, 0,
-			0, 0, 0, 0,
-			0, 0, 0, 0,
-			0, 0, 0, 0,
-			0, 0, 1, 1,
-			1, 1, 1, 1,
-			1, 1, 1, 1,
-			1, 1, 1, 1,
-			1, 1, 1, 1,
-			1, 1, 1, 1,
+//	public final static int[] EV_AVAIL = {
+//			1, 1, 1, 1, 
+//			1, 1, 1, 1,
+//			1, 1, 1, 1, 
+//			1, 1, 1, 1, 
+//			1, 1, 1, 1, 
+//			1, 1, 1, 1, 
+//			1, 1, 1, 0, 
+//			0, 0, 0, 0, 
+//			0, 0, 0, 0,
+//			0, 0, 0, 0,
+//			0, 0, 0, 0,
+//			0, 0, 0, 0,
+//			0, 0, 0, 0,
+//			0, 0, 0, 0,
+//			0, 0, 0, 0,
+//			0, 0, 0, 0,
+//			0, 0, 0, 0,
+//			0, 0, 0, 0,
+//			0, 0, 1, 1,
+//			1, 1, 1, 1,
+//			1, 1, 1, 1,
+//			1, 1, 1, 1,
+//			1, 1, 1, 1,
+//			1, 1, 1, 1,
+//	};
+	
+	public final static int[][] EV_AVAIL = {
+			{1,1}, {1,1}, {1,1}, {1,1}, 
+			{1,1}, {1,1}, {1,1}, {1,1},
+			{1,1}, {1,1}, {1,1}, {1,1},
+			{1,1}, {1,1}, {1,1}, {1,1},
+			{1,1}, {1,1}, {1,1}, {1,1},
+			{1,1}, {1,1}, {1,1}, {1,1},
+			{1,1}, {1,1}, {1,1}, {0,0},
+			{0,0}, {0,0}, {0,0}, {0,0}, 
+			{0,0}, {0,0}, {0,0}, {0,0}, 
+			{0,0}, {0,0}, {0,0}, {0,0}, 
+			{0,0}, {0,0}, {0,0}, {0,0}, 
+			{0,0}, {0,0}, {0,0}, {0,0}, 
+			{0,0}, {0,0}, {0,0}, {0,0}, 
+			{0,0}, {0,0}, {0,0}, {0,0}, 
+			{0,0}, {0,0}, {0,0}, {0,0}, 
+			{0,0}, {0,0}, {0,0}, {0,0}, 
+			{0,0}, {0,0}, {0,0}, {0,0}, 
+			{0,0}, {0,0}, {0,0}, {0,0}, 
+			{0,0}, {0,0}, {1,1}, {1,1}, 
+			{1,1}, {1,1}, {1,1}, {1,1},
+			{1,1}, {1,1}, {1,1}, {1,1},
+			{1,1}, {1,1}, {1,1}, {1,1},
+			{1,1}, {1,1}, {1,1}, {1,1},
+			{1,1}, {1,1}, {1,1}, {1,1},
 	};
 	
 	
@@ -80,7 +107,7 @@ public class Constants {
 //			.toArray();
 
 	// Some test data
-	// Fems4, 22.07.21
+	// Fems4, 22.07.21 (54% --> 69% SoC)
 //	public final static int[] PV_POWER = {0,
 //			0, 0, 0, 0,
 //			0, 0, 0, 0,
@@ -108,7 +135,7 @@ public class Constants {
 //			0, 0, 0, 0 
 //			};
 //	
-//	// Fems4, 22.07.2021
+//	// Fems4, 22.07.2021 (54% --> 69% SoC)
 //	public final static int[] HH_LOAD = {
 //			2743, 2654, 2693, 2707,
 //			2623, 2642, 2699, 2670,
@@ -191,7 +218,7 @@ public class Constants {
 //			431, 460, 445, 395
 //	};
 	
-	// Fems4 05.10.21
+	// Fems4 05.10.21 (73% --> 8% SoC)
 //	public final static int[]  PV_POWER = {
 //			0, 0, 0, 0,
 //			0, 0, 0, 0,
@@ -218,7 +245,7 @@ public class Constants {
 //			0, 0, 0, 0,
 //			0, 0, 0, 0 }; 
 //	
-//	// Fems4 05.10.21
+//	// Fems4 05.10.21 (73% --> 8% SoC)
 //	public final static int[]  HH_LOAD = {
 //			400, 429, 483, 427,
 //			456, 460, 424, 401,
@@ -358,7 +385,7 @@ public class Constants {
 //			511, 519, 517, 472
 //	};
 	
-	// Fems4 21.12.21 
+	// Fems4 21.12.21 (11% --> 31% SoC)
 	public final static int[] PV_POWER = {
 			0,0, 0, 0,
 			0, 0, 0, 0,
@@ -386,7 +413,7 @@ public class Constants {
 			0, 0, 0, 0
 	};
 	
-	// Fems4 21.12.21 
+	// Fems4 21.12.21 (11% --> 31% SoC)
 	public final static int[]  HH_LOAD = {
 			532, 467, 517, 451,
 			477, 485, 475, 470,
@@ -421,10 +448,65 @@ public class Constants {
 			.toArray();
 	
 	public final static int GRID_BUY_COST_CONST = 30; // [ct]
-	public final static int[] GRID_BUY_COST = IntStream.of(new int[NO_OF_PERIODS]).map(i -> GRID_BUY_COST_CONST)
-			.toArray();
+//	public final static int[] GRID_BUY_COST = IntStream.of(new int[NO_OF_PERIODS]).map(i -> GRID_BUY_COST_CONST)
+//			.toArray();
 	
-// TODO time-varying charge pricing	
-//	public final static int[] GRID_BUY_COST = { ... };
+//	public final static double[] GRID_BUY_COST = {15.895, 16.098, 17.115, 17.496, 16.153, 15.2, 12.001, 11.103, 10.504, 10.5, 7.423, 7.328, 6.797, 7.253, 8.966, 15.01, 17.354, 17.84, 15.891, 14.001, 14.999, 15.743, 13.09, 12.014 }; 
+	
+//	public final static double[] GRID_BUY_COST = {
+//			15.895, 15.895, 15.895, 15.895,
+//			16.098, 16.098, 16.098, 16.098,
+//			17.115, 17.115, 17.115, 17.115,
+//			17.496, 17.496, 17.496, 17.496,
+//			16.153, 16.153, 16.153, 16.153, 
+//			15.2, 15.2, 15.2, 15.2, 
+//			12.001, 12.001, 12.001, 12.001,
+//			11.103, 11.103, 11.103, 11.103,
+//			10.504, 10.504, 10.504, 10.504,
+//			10.5, 10.5, 10.5, 10.5,
+//			7.423, 7.423, 7.423, 7.423,
+//			7.328, 7.328, 7.328, 7.328,
+//			6.797, 6.797, 6.797, 6.797,
+//			7.253, 7.253, 7.253, 7.253,
+//			8.966, 8.966, 8.966, 8.966,
+//			15.01, 15.01, 15.01, 15.01,
+//			17.354, 17.354, 17.354, 17.354,
+//			17.84, 17.84, 17.84, 17.84,
+//			15.891, 15.891, 15.891, 15.891,
+//			14.001, 14.001, 14.001, 14.001,
+//			14.999, 14.999, 14.999, 14.999,
+//			15.743, 15.743, 15.743, 15.743,
+//			13.09, 13.09, 13.09, 13.09,
+//			12.014, 12.014, 12.014, 12.014
+//	};
+	
+	public final static double[] GRID_BUY_COST = {
+			25, 25, 25, 25, 
+			24, 24, 24, 24, 
+			20, 20, 20, 20, 
+			23, 23, 23, 23,
+			20, 20, 20, 20, 
+			17, 17, 17, 17, 
+			19, 19, 19, 19, 
+			15, 15, 15, 15, 
+			15, 15, 15, 15, 
+			14, 14, 14, 14,
+			12, 12, 12, 12, 
+			13, 13, 13, 13, 
+			11, 11, 11, 11,
+			// 7, 7, 7, 7,
+			// 8, 8, 8, 8,
+			12, 12, 12, 12, 
+			13, 13, 13, 13, 
+			16, 16, 16, 16, 
+			17, 17, 17, 17, 
+			20, 20, 20, 20, 
+			24, 24, 24, 24,
+			25, 25, 25, 25, 
+			20, 20, 20, 20,
+			22, 22, 22, 22,
+			24, 24, 24, 24, 
+			20, 20, 20, 20
+	};
 	
 }
