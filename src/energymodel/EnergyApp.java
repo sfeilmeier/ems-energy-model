@@ -272,11 +272,11 @@ public class EnergyApp {
 		
 		// At the end of the day the EVs have to be fully charged.
 		em.model.addExpression("EV0_Schedule") //
-			.set(em.periods[95].evs.get(0).energy, ONE) //
-			.level(EV_MAX_ENERGY*60);
-		em.model.addExpression("EV1_Schedule") //
-			.set(em.periods[95].evs.get(1).energy, ONE) //
+			.set(em.periods[167].evs.get(0).energy, ONE) //
 			.lower(EV_MAX_ENERGY*60*80/100);
+		em.model.addExpression("EV1_Schedule") //
+			.set(em.periods[167].evs.get(1).energy, ONE) //
+			.level(EV_MAX_ENERGY*60);
 
 //		// TODO Grid-Sell can never be more than Production. This simple model assumes
 //		// no production, so Grid-Sell must be zero - at least outside of HLZF period.

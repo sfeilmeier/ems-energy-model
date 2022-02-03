@@ -34,6 +34,8 @@ import java.awt.Color;
 import java.io.IOException;
 import java.math.RoundingMode;
 
+import javax.swing.text.AttributeSet.ColorAttribute;
+
 import org.ojalgo.optimisation.ExpressionsBasedModel;
  import org.ojalgo.optimisation.Optimisation;
 import org.ojalgo.type.CalendarDateUnit;
@@ -137,15 +139,15 @@ public class EnergyModel {
 			//  p.ess.energy = periods[i-1].ess.energy - p.ess.power*MINUTES_PER_PERIOD - ESS_EFFICIENCY*60		
 			
 			// Evenly distributed charging
-			if (i == 0) {
-				p.ess.charge.power.upper(ESS_MAX_CHARGE_DIFFERENCE);
-		} else {
-			model.addExpression(p.name + "_Charge_Diff_Max_Expr") //
-				.set(periods[i].ess.charge.power , ONE) //
-				.set(periods[i-1].ess.charge.power, ONE.negate()) //
-				.lower(-1 * ESS_MAX_CHARGE_DIFFERENCE) //
-				.upper(ESS_MAX_CHARGE_DIFFERENCE);
-		}
+//			if (i == 0) {
+//				p.ess.charge.power.upper(ESS_MAX_CHARGE_DIFFERENCE);
+//		} else {
+//			model.addExpression(p.name + "_Charge_Diff_Max_Expr") //
+//				.set(periods[i].ess.charge.power , ONE) //
+//				.set(periods[i-1].ess.charge.power, ONE.negate()) //
+//				.lower(-1 * ESS_MAX_CHARGE_DIFFERENCE) //
+//				.upper(ESS_MAX_CHARGE_DIFFERENCE);
+//		}
 
 			/*
 			 * EV 
@@ -224,7 +226,7 @@ public class EnergyModel {
 			model.addExpression("EV1_" + p.name + "_Charge_Power_Expr") //
 					.set(p.evs.get(1).isCharged, EV_MAX_CHARGE) //
 					.set(p.evs.get(1).charge.power, ONE) //
-					.lower(3000) //
+					.lower(EV_MIN_CHARGE) //
 					.upper(EV_MAX_CHARGE);
 			
 			p.evs.get(0).energy = model.addVariable("EV0_" + p.name + "Energy") //
@@ -316,6 +318,9 @@ public class EnergyModel {
 //					.lower(0) //
 //					.upper(GRID_BUY_LIMIT);
 			
+			
+			
+			
 			p.grid.buy.cost = GRID_BUY_COST[i];
 			p.grid.sell.revenue = GRID_SELL_REVENUE[i];
 			
@@ -327,8 +332,8 @@ public class EnergyModel {
 //		for (int i = 0; i < this.periods.length; i++) {
 //			Period p = this.periods[i];
 //			System.out.println(
-//					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f  | %s %5d | %s %5d", i, //
-////					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f| %s %5d | %s %5d", i, //	
+////					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f  | %s %5d | %s %5d", i, //
+//					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f| %s %5d | %s %5d", i, //	
 //							"Grid", p.grid.power.getValue().doubleValue(), //
 //							"GridBuy", p.grid.buy.power.getValue().doubleValue(), //
 //							"GridSell", p.grid.sell.power.getValue().doubleValue(), //
@@ -336,9 +341,9 @@ public class EnergyModel {
 //							"ESSCharge", p.ess.charge.power.getValue().doubleValue(), //
 //							"ESSDischarge", p.ess.discharge.power.getValue().doubleValue(), //
 //							"ESSEnergy", p.ess.energy.getValue().doubleValue() / 60, //
-//							"EVChargeMode", p.ev.isCharged.getValue().doubleValue(), //
-//							"EVPower", p.ev.charge.power.getValue().doubleValue(), //
-//							"EVEnergy", p.ev.energy.getValue().doubleValue() / 60,
+////							"EVChargeMode", p.ev.isCharged.getValue().doubleValue(), //
+////							"EVPower", p.ev.charge.power.getValue().doubleValue(), //
+////							"EVEnergy", p.ev.energy.getValue().doubleValue() / 60,
 //							"PVPower", p.pv.power.prod, //
 //							"HHLoad", p.hh.power.cons//
 //					));
@@ -377,6 +382,8 @@ public class EnergyModel {
 		Data essDischarge = Plot.data();
 		Data pvProduction = Plot.data();
 		Data hhLoad = Plot.data();
+		Data ev0Power = Plot.data();
+		Data ev1Power = Plot.data();
 		for (int i = 0; i < this.periods.length; i++) {
 			Period p = this.periods[i];
 			gridBuy.xy(i, p.grid.buy.power.getValue().doubleValue());
@@ -385,6 +392,8 @@ public class EnergyModel {
 			essDischarge.xy(i, p.ess.discharge.power.getValue().doubleValue());
 			pvProduction.xy(i, p.pv.power.prod);
 			hhLoad.xy(i,  p.hh.power.cons);
+			ev0Power.xy(i, p.evs.get(0).charge.power.getValue().doubleValue());
+			ev1Power.xy(i, p.evs.get(1).charge.power.getValue().doubleValue());
 		}
 
 		Plot plot = Plot.plot(//
@@ -408,6 +417,10 @@ public class EnergyModel {
 						.color(Color.CYAN))
 				.series("HH",  hhLoad, Plot.seriesOpts() //
 						.color(Color.ORANGE))
+				.series("EV0", ev0Power, Plot.seriesOpts() //
+						.color(Color.LIGHT_GRAY))
+				.series("EV1", ev1Power, Plot.seriesOpts() //
+						.color(Color.LIGHT_GRAY))
 						
 						
 
