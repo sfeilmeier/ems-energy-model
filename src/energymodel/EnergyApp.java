@@ -122,11 +122,21 @@ public class EnergyApp {
 		// gridSellRevenueSumExpr. = 0 = - gridSellRevenueSum +
 		// \sum_{i = 1}^{periods.length} periods[i].grid.sell.power *
 		// periods[i].grid.sell.revenue
+//		Variable gridSellRevenueSum = em.model.addVariable("Grid_Sell_Revenue_Sum");
+//		Expression gridSellRevenueSumExpr = em.model.addExpression("Grid_Sell_Revenue_Sum_Expr") //
+//				.set(gridSellRevenueSum, ONE.negate()); //
+//		for (Period p : em.periods) {
+//			gridSellRevenueSumExpr.set(p.grid.sell.power, p.grid.sell.revenue);
+//		}
+//		gridSellRevenueSumExpr.level(0);
+		
+		// In case of 2 PVs
 		Variable gridSellRevenueSum = em.model.addVariable("Grid_Sell_Revenue_Sum");
 		Expression gridSellRevenueSumExpr = em.model.addExpression("Grid_Sell_Revenue_Sum_Expr") //
 				.set(gridSellRevenueSum, ONE.negate()); //
 		for (Period p : em.periods) {
-			gridSellRevenueSumExpr.set(p.grid.sell.power, p.grid.sell.revenue);
+			gridSellRevenueSumExpr.set(p.pvs.get(0).power.sell, p.grid.sell.revenue[0]);
+			gridSellRevenueSumExpr.set(p.pvs.get(1).power.sell, p.grid.sell.revenue[1]);
 		}
 		gridSellRevenueSumExpr.level(0);
 
@@ -256,8 +266,8 @@ public class EnergyApp {
 		// At the end of the day we want a SoC of xy% 
 //			em.model.addExpression("ESS_Schedule") //
 //				.set(em.periods[95].ess.energy, ONE) // alternatively periods[60]
-//				.lower(ESS_MAX_ENERGY * 60 *25/100); // in Wmin
-			//	.lower((hhSum - pvSum)*15); // in Wmin
+//				.lower(ESS_MAX_ENERGY * 60 *10/100); // in Wmin
+//				.lower((hhSum - pvSum)*15); // in Wmin
 //		}	
 //		// At end of HLZF2 battery is expected to be empty.
 //		em.model.addExpression() //
@@ -265,18 +275,18 @@ public class EnergyApp {
 //				.level(ESS_MAX_ENERGY *60 *20/100);
 		
 		
-//		// At the end of the day the EV has to be fully charged.
-//			em.model.addExpression("EV_Schedule") //
-//				.set(em.periods[95].ev.energy, ONE) //
-//				.level(EV_MAX_ENERGY*60);
+		// At the end of the day the EV has to be fully charged.
+			em.model.addExpression("EV_Schedule") //
+				.set(em.periods[95].ev.energy, ONE) //
+				.level(EV_MAX_ENERGY*60);
 		
 		// At the end of the day the EVs have to be fully charged.
-		em.model.addExpression("EV0_Schedule") //
-			.set(em.periods[167].evs.get(0).energy, ONE) //
-			.lower(EV_MAX_ENERGY*60*80/100);
-		em.model.addExpression("EV1_Schedule") //
-			.set(em.periods[167].evs.get(1).energy, ONE) //
-			.level(EV_MAX_ENERGY*60);
+//		em.model.addExpression("EV0_Schedule") //
+//			.set(em.periods[167].evs.get(0).energy, ONE) //
+//			.lower(EV_MAX_ENERGY*60*80/100);
+//		em.model.addExpression("EV1_Schedule") //
+//			.set(em.periods[167].evs.get(1).energy, ONE) //
+//			.level(EV_MAX_ENERGY*60);
 
 //		// TODO Grid-Sell can never be more than Production. This simple model assumes
 //		// no production, so Grid-Sell must be zero - at least outside of HLZF period.

@@ -39,6 +39,8 @@ public class Period {
 //	public final EV ev2 = new EV();
 	public final List<EV> evs = new ArrayList<EV>();
 	
+	// If we want to have multiple PVs
+	public final List<PV> pvs = new ArrayList<PV>();
 
 
 

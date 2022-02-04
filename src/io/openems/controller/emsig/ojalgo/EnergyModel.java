@@ -10,8 +10,12 @@ import static io.openems.controller.emsig.ojalgo.Constants.GRID_BUY_COST;
 import static io.openems.controller.emsig.ojalgo.Constants.GRID_BUY_LIMIT;
 import static io.openems.controller.emsig.ojalgo.Constants.GRID_SELL_LIMIT;
 import static io.openems.controller.emsig.ojalgo.Constants.GRID_SELL_REVENUE;
+import static io.openems.controller.emsig.ojalgo.Constants.GRID_SELL_REVENUE0;
+import static io.openems.controller.emsig.ojalgo.Constants.GRID_SELL_REVENUE1;
 import static io.openems.controller.emsig.ojalgo.Constants.MINUTES_PER_PERIOD;
 import static io.openems.controller.emsig.ojalgo.Constants.PV_POWER;
+import static io.openems.controller.emsig.ojalgo.Constants.PV0_POWER;
+// import static io.openems.controller.emsig.ojalgo.Constants.PV1_POWER;
 import static io.openems.controller.emsig.ojalgo.Constants.HH_LOAD;
 import static io.openems.controller.emsig.ojalgo.Constants.EV_AVAIL;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_CHARGE_EFFICIENCY;
@@ -71,6 +75,15 @@ public class EnergyModel {
 			// specify the PV power and the HH load for each period
 			p.pv.power.prod = PV_POWER[i];
 			p.hh.power.cons = HH_LOAD[i];
+			
+			// In case of 2 PVs
+			final PV pv0 = new PV();
+			final PV pv1 = new PV();
+			p.pvs.add(pv0);
+			p.pvs.add(pv1);
+			p.pvs.get(0).power.prod = PV0_POWER[i];
+			p.pvs.get(1).power.prod = PV_POWER[i] - PV0_POWER[i];
+
 
 			/*
 			 * Energy Storage
@@ -90,7 +103,8 @@ public class EnergyModel {
 					.upper(ESS_MAX_DISCHARGE);
 			p.ess.charge.power = model.addVariable("ESS_" + p.name + "_Charge_Power") //
 					.lower(0) //
-					.upper(Math.min(ESS_MAX_CHARGE, p.pv.power.prod));
+//	 				.upper(Math.min(ESS_MAX_CHARGE, p.pv.power.prod)) //
+					.upper(Math.min(ESS_MAX_CHARGE, p.pvs.get(0).power.prod + p.pvs.get(1).power.prod));
 			model.addExpression("ESS_" + p.name + "_ChargeDischargePower_Expr") //
 					.set(p.ess.power, ONE) //
 					.set(p.ess.discharge.power, ONE.negate()) //
@@ -139,6 +153,8 @@ public class EnergyModel {
 			//  p.ess.energy = periods[i-1].ess.energy - p.ess.power*MINUTES_PER_PERIOD - ESS_EFFICIENCY*60		
 			
 			// Evenly distributed charging
+			// Note: in case of a time-varying electricity rate this
+			// constraint should not be imposed 
 //			if (i == 0) {
 //				p.ess.charge.power.upper(ESS_MAX_CHARGE_DIFFERENCE);
 //		} else {
@@ -156,109 +172,105 @@ public class EnergyModel {
 			// If the EV is not available, isCharged = 1,  chargePower = 0
 			// Either allow no charge power (if isCharged = 1) or allow
 			// a charge power in [EV_MIN_CHARGE, EV_MAX_CHARGE] 
-//			p.ev.charge.power = model.addVariable("EV_" + p.name + "_Charge_Power") //
-//					.lower(0) //
-//					.upper(EV_MAX_CHARGE);
-//			
-//			p.ev.isCharged = model.addVariable("EV_" + p.name + "_Charge_Mode") //
-//					.binary();
-//			
-//
-//			 	model.addExpression("EV_" + p.name + "_Charge_Decision_Expr") //
-//		 			.set(p.ev.isCharged, ONE) //
-//		 			.lower(1 - EV_AVAIL[i]);
-//			 	model.addExpression("EV_" + p.name + "_Charge_Power_Expr") //
-//		 			.set(p.ev.isCharged, EV_MAX_CHARGE) //
-//		 			.set(p.ev.charge.power, ONE) //
-//		 			.lower(EV_MIN_CHARGE) //
-//		 			.upper(EV_MAX_CHARGE);
-//		
-// 					
-//			// EV energy
-//			// p.ev.energy = p.ev.charge.power*MINUTES_PER_PERIODS
-//			// In particular, assume a minimum EV charge power of 100
-//			p.ev.energy = model.addVariable("EV_" + p.name + "Energy") //
-//					.lower(0) //
-//					.upper(EV_MAX_ENERGY * 60); // [Wmin]
-//			if (i == 0) {
-//			model.addExpression(p.name + "_EV_Energy_Expr") //
-//				.set(p.ev.energy, ONE) //
-//				.set(p.ev.charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-//				.level(EV_INITIAL_ENERGY *60);
-//			} else {
-//				model.addExpression(p.name + "_EV_Energy_Expr") //
-//				.set(p.ev.energy, ONE.negate()) //
-//				.set(p.ev.charge.power, MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-//				.set(periods[i-1].ev.energy, ONE) //
-//				.level(0);
-//			}
+			p.ev.charge.power = model.addVariable("EV_" + p.name + "_Charge_Power") //
+					.lower(0) //
+					.upper(EV_MAX_CHARGE);
+			p.ev.isCharged = model.addVariable("EV_" + p.name + "_Charge_Mode") //
+					.binary();
+			 	model.addExpression("EV_" + p.name + "_Charge_Decision_Expr") //
+		 			.set(p.ev.isCharged, ONE) //
+		 			.lower(1 - EV_AVAIL[i]);
+			 	model.addExpression("EV_" + p.name + "_Charge_Power_Expr") //
+		 			.set(p.ev.isCharged, EV_MAX_CHARGE) //
+		 			.set(p.ev.charge.power, ONE) //
+		 			.lower(EV_MIN_CHARGE) //
+		 			.upper(EV_MAX_CHARGE);
 			
-//		// If we want to have multiple EVs
+			// EV energy
+			// p.ev.energy = p.ev.charge.power*MINUTES_PER_PERIODS
+			// In particular, assume a minimum EV charge power of 100
+			p.ev.energy = model.addVariable("EV_" + p.name + "Energy") //
+					.lower(0) //
+					.upper(EV_MAX_ENERGY * 60); // [Wmin]
+			if (i == 0) {
+			model.addExpression(p.name + "_EV_Energy_Expr") //
+				.set(p.ev.energy, ONE) //
+				.set(p.ev.charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
+				.level(EV_INITIAL_ENERGY *60);
+			} else {
+				model.addExpression(p.name + "_EV_Energy_Expr") //
+				.set(p.ev.energy, ONE.negate()) //
+				.set(p.ev.charge.power, MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
+				.set(periods[i-1].ev.energy, ONE) //
+				.level(0);
+			}
+			
+//		// In case of multiple EVs
 //		// TODO currently 2, but this has to be generalized eventually
 		// Defining the EVs ''by hand'' only makes sense if their
 		// technical specifications differ (max energey, min charge, max charge, ...)
-			final EV ev0 = new EV();
-			final EV ev1 = new EV();
-			p.evs.add(ev0);
-			p.evs.add(ev1);
-			p.evs.get(0).charge.power = model.addVariable("EV0_" + p.name + "_Charge_Power") //
-					.lower(0) //
-					.upper(EV_MAX_CHARGE);
-			p.evs.get(1).charge.power = model.addVariable("EV1_" + p.name + "_Charge_Power") //
-					.lower(0) //
-					.upper(EV_MAX_CHARGE);
-			p.evs.get(0).isCharged = model.addVariable("EV0_" + p.name + "_Charge_Mode") //
-					.binary();
-			p.evs.get(1).isCharged = model.addVariable("EV1_" + p.name + "_Charge_Mode") //
-					.binary();
-			
-			model.addExpression("EV0_" + p.name + "_Charge_Decision_Expr") //
- 					.set(p.evs.get(0).isCharged, ONE) //
- 					.lower(1 - EV_AVAIL[i][0]);
-			model.addExpression("EV0_" + p.name + "_Charge_Power_Expr") //
- 					.set(p.evs.get(0).isCharged, EV_MAX_CHARGE) //
- 					.set(p.evs.get(0).charge.power, ONE) //
- 					.lower(EV_MIN_CHARGE) //
- 					.upper(EV_MAX_CHARGE);
-			model.addExpression("EV1_" + p.name + "_Charge_Decision_Expr") //
-					.set(p.evs.get(1).isCharged, ONE) //
-					.lower(1 - EV_AVAIL[i][1]);
-			model.addExpression("EV1_" + p.name + "_Charge_Power_Expr") //
-					.set(p.evs.get(1).isCharged, EV_MAX_CHARGE) //
-					.set(p.evs.get(1).charge.power, ONE) //
-					.lower(EV_MIN_CHARGE) //
-					.upper(EV_MAX_CHARGE);
-			
-			p.evs.get(0).energy = model.addVariable("EV0_" + p.name + "Energy") //
-					.lower(0) //
-					.upper(EV_MAX_ENERGY * 60); // [Wmin]
-			if (i == 0) {
-			model.addExpression(p.name + "_EV0_Energy_Expr") //
-				.set(p.evs.get(0).energy, ONE) //
-				.set(p.evs.get(0).charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-				.level(EV_INITIAL_ENERGY *60);
-			} else {
-				model.addExpression(p.name + "_EV0_Energy_Expr") //
-				.set(p.evs.get(0).energy, ONE.negate()) //
-				.set(p.evs.get(0).charge.power, MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-				.set(periods[i-1].evs.get(0).energy, ONE) //
-				.level(0);
-			}
-			p.evs.get(1).energy = model.addVariable("EV1_" + p.name + "Energy") //
-					.lower(0) //
-					.upper(EV_MAX_ENERGY * 60); // [Wmin]
-			if (i == 0) {
-			model.addExpression(p.name + "_EV1_Energy_Expr") //
-				.set(p.evs.get(1).energy, ONE) //
-				.set(p.evs.get(1).charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-				.level(EV_INITIAL_ENERGY *60);
-			} else {
-				model.addExpression(p.name + "_EV1_Energy_Expr") //
-				.set(p.evs.get(1).energy, ONE.negate()) //
-				.set(p.evs.get(1).charge.power, MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-				.set(periods[i-1].evs.get(1).energy, ONE) //
-				.level(0);
-			}
+//			final EV ev0 = new EV();
+//			final EV ev1 = new EV();
+//			p.evs.add(ev0);
+//			p.evs.add(ev1);
+//			p.evs.get(0).charge.power = model.addVariable("EV0_" + p.name + "_Charge_Power") //
+//					.lower(0) //
+//					.upper(EV_MAX_CHARGE);
+//			p.evs.get(1).charge.power = model.addVariable("EV1_" + p.name + "_Charge_Power") //
+//					.lower(0) //
+//					.upper(EV_MAX_CHARGE);
+//			p.evs.get(0).isCharged = model.addVariable("EV0_" + p.name + "_Charge_Mode") //
+//					.binary();
+//			p.evs.get(1).isCharged = model.addVariable("EV1_" + p.name + "_Charge_Mode") //
+//					.binary();
+//			
+//			model.addExpression("EV0_" + p.name + "_Charge_Decision_Expr") //
+// 					.set(p.evs.get(0).isCharged, ONE) //
+// 					.lower(1 - EV_AVAIL[i][0]);
+//			model.addExpression("EV0_" + p.name + "_Charge_Power_Expr") //
+// 					.set(p.evs.get(0).isCharged, EV_MAX_CHARGE) //
+// 					.set(p.evs.get(0).charge.power, ONE) //
+// 					.lower(EV_MIN_CHARGE) //
+// 					.upper(EV_MAX_CHARGE);
+//			model.addExpression("EV1_" + p.name + "_Charge_Decision_Expr") //
+//					.set(p.evs.get(1).isCharged, ONE) //
+//					.lower(1 - EV_AVAIL[i][1]);
+//			model.addExpression("EV1_" + p.name + "_Charge_Power_Expr") //
+//					.set(p.evs.get(1).isCharged, EV_MAX_CHARGE) //
+//					.set(p.evs.get(1).charge.power, ONE) //
+//					.lower(EV_MIN_CHARGE) //
+//					.upper(EV_MAX_CHARGE);
+//			
+//			p.evs.get(0).energy = model.addVariable("EV0_" + p.name + "Energy") //
+//					.lower(0) //
+//					.upper(EV_MAX_ENERGY * 60); // [Wmin]
+//			if (i == 0) {
+//			model.addExpression(p.name + "_EV0_Energy_Expr") //
+//				.set(p.evs.get(0).energy, ONE) //
+//				.set(p.evs.get(0).charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
+//				.level(EV_INITIAL_ENERGY *60);
+//			} else {
+//				model.addExpression(p.name + "_EV0_Energy_Expr") //
+//				.set(p.evs.get(0).energy, ONE.negate()) //
+//				.set(p.evs.get(0).charge.power, MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
+//				.set(periods[i-1].evs.get(0).energy, ONE) //
+//				.level(0);
+//			}
+//			p.evs.get(1).energy = model.addVariable("EV1_" + p.name + "Energy") //
+//					.lower(0) //
+//					.upper(EV_MAX_ENERGY * 60); // [Wmin]
+//			if (i == 0) {
+//			model.addExpression(p.name + "_EV1_Energy_Expr") //
+//				.set(p.evs.get(1).energy, ONE) //
+//				.set(p.evs.get(1).charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
+//				.level(EV_INITIAL_ENERGY *60);
+//			} else {
+//				model.addExpression(p.name + "_EV1_Energy_Expr") //
+//				.set(p.evs.get(1).energy, ONE.negate()) //
+//				.set(p.evs.get(1).charge.power, MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
+//				.set(periods[i-1].evs.get(1).energy, ONE) //
+//				.level(0);
+//			}
 			
 			
 			/*
@@ -270,16 +282,18 @@ public class EnergyModel {
 			model.addExpression(p.name + "_Power_Balance") //
 			.set(p.ess.power, ONE) //
 			.set(p.grid.power, ONE) //
-//			.set(p.ev.charge.power, ONE.negate()) //
-			.set(p.evs.get(0).charge.power, ONE.negate()) //
-			.set(p.evs.get(1).charge.power, ONE.negate()) //
-			.level(p.hh.power.cons - p.pv.power.prod);
+			.set(p.ev.charge.power, ONE.negate()) //
+//			.set(p.evs.get(0).charge.power, ONE.negate()) //
+//			.set(p.evs.get(1).charge.power, ONE.negate()) //
+//			.level(p.hh.power.cons - p.pv.power.prod);
+			.level(p.hh.power.cons - p.pvs.get(0).power.prod - p.pvs.get(1).power.prod);
 			p.grid.buy.power = model.addVariable("Grid_" + p.name + "_Buy_Power") //
 					.lower(0) //
 					.upper(GRID_BUY_LIMIT);
 			p.grid.sell.power = model.addVariable("Grid_" + p.name + "_Sell_Power") //
 					.lower(0) //
-					.upper(p.pv.power.prod); // originally .upper(GRID_SELL_LIMIT);
+//					.upper(Math.min(p.pv.power.prod, GRID_SELL_LIMIT)); //
+					.upper(Math.min(p.pvs.get(0).power.prod + p.pvs.get(1).power.prod, GRID_SELL_LIMIT));
 			model.addExpression("Grid_" + p.name + "_BuySellPower_Expr") //
 					.set(p.grid.power, ONE) //
 					.set(p.grid.buy.power, ONE.negate()) //
@@ -319,43 +333,39 @@ public class EnergyModel {
 //					.upper(GRID_BUY_LIMIT);
 			
 			
+			// We need to specify the portion of each PV contributing 
+			// to p.grid.sell.power
+			p.pvs.get(0).power.sell = model.addVariable(p.name + "_PV0_Sell_Power") //
+					.lower(0) //
+					.upper(p.pvs.get(0).power.prod);
+			p.pvs.get(1).power.sell = model.addVariable(p.name + "_PV1_Sell_Power") //
+					.lower(0) //
+					.upper(p.pvs.get(1).power.prod);
+				model.addExpression(p.name + "_PV_Sell_Power_Expr") //
+						.set(p.grid.sell.power, ONE.negate())
+						.set(p.pvs.get(0).power.sell, ONE) //
+						.set(p.pvs.get(1).power.sell, ONE) //
+						.level(0);
+
+//			
 			
 			
+//			p.grid.buy.cost = GRID_BUY_COST[i];
+//			p.grid.sell.revenue = GRID_SELL_REVENUE[i];
+			
+			// In case of 2 PVs
 			p.grid.buy.cost = GRID_BUY_COST[i];
-			p.grid.sell.revenue = GRID_SELL_REVENUE[i];
-			
-	
+			p.grid.sell.revenue[0] = GRID_SELL_REVENUE0[i];
+			p.grid.sell.revenue[1] = GRID_SELL_REVENUE1[i];
 		}
 	}
-	
-//	public void prettyPrint() {
-//		for (int i = 0; i < this.periods.length; i++) {
-//			Period p = this.periods[i];
-//			System.out.println(
-////					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f  | %s %5d | %s %5d", i, //
-//					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f| %s %5d | %s %5d", i, //	
-//							"Grid", p.grid.power.getValue().doubleValue(), //
-//							"GridBuy", p.grid.buy.power.getValue().doubleValue(), //
-//							"GridSell", p.grid.sell.power.getValue().doubleValue(), //
-//							"ESS", p.ess.power.getValue().doubleValue(), //
-//							"ESSCharge", p.ess.charge.power.getValue().doubleValue(), //
-//							"ESSDischarge", p.ess.discharge.power.getValue().doubleValue(), //
-//							"ESSEnergy", p.ess.energy.getValue().doubleValue() / 60, //
-////							"EVChargeMode", p.ev.isCharged.getValue().doubleValue(), //
-////							"EVPower", p.ev.charge.power.getValue().doubleValue(), //
-////							"EVEnergy", p.ev.energy.getValue().doubleValue() / 60,
-//							"PVPower", p.pv.power.prod, //
-//							"HHLoad", p.hh.power.cons//
-//					));
-//		}
-//	}
 	
 	public void prettyPrint() {
 		for (int i = 0; i < this.periods.length; i++) {
 			Period p = this.periods[i];
 			System.out.println(
-//					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5d | %s %5d", i, //
-					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5d | %s %5d", i, //	
+					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5d  | %s %5d | %s %5d | %s %5.0f | %s %5.0f | %s %5d", i, //
+//					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f| %s %5d | %s %5d", i, //	
 							"Grid", p.grid.power.getValue().doubleValue(), //
 							"GridBuy", p.grid.buy.power.getValue().doubleValue(), //
 							"GridSell", p.grid.sell.power.getValue().doubleValue(), //
@@ -363,17 +373,49 @@ public class EnergyModel {
 							"ESSCharge", p.ess.charge.power.getValue().doubleValue(), //
 							"ESSDischarge", p.ess.discharge.power.getValue().doubleValue(), //
 							"ESSEnergy", p.ess.energy.getValue().doubleValue() / 60, //
-//							"EV0ChargeMode", p.evs.get(0).isCharged.getValue().doubleValue(), //
-							"EV0Power", p.evs.get(0).charge.power.getValue().doubleValue(), //
-							"EV0Energy", p.evs.get(0).energy.getValue().doubleValue() / 60, //
-//							"EV1ChargeMode", p.evs.get(1).isCharged.getValue().doubleValue(), //
-							"EV1Power", p.evs.get(1).charge.power.getValue().doubleValue(), //
-							"EV1Energy", p.evs.get(1).energy.getValue().doubleValue() / 60, //
+//							"EVChargeMode", p.ev.isCharged.getValue().doubleValue(), //
+							"EVPower", p.ev.charge.power.getValue().doubleValue(), //
+							"EVEnergy", p.ev.energy.getValue().doubleValue() / 60,
 							"PVPower", p.pv.power.prod, //
+							"PV0Power", p.pvs.get(0).power.prod, //
+							"PV1Power", p.pvs.get(1).power.prod, //
+							"PV0SellPower", p.pvs.get(0).power.sell.getValue().doubleValue(), //
+							"PV1SellPower", p.pvs.get(1).power.sell.getValue().doubleValue(), //
 							"HHLoad", p.hh.power.cons//
 					));
 		}
 	}
+	
+//	public void prettyPrint() {
+//		for (int i = 0; i < this.periods.length; i++) {
+//			Period p = this.periods[i];
+//			System.out.println(
+////					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5d | %s %5d", i, //
+////					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5d | %s %5d | %s %5d | %s %5.0f | %s %5.0f | %s %5d", i, //	
+//					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5d | %s %5d | %s %5d | %s %5.0f | %s %5.0f | %s %5d", i, //	
+//
+//							"Grid", p.grid.power.getValue().doubleValue(), //
+//							"GridBuy", p.grid.buy.power.getValue().doubleValue(), //
+//							"GridSell", p.grid.sell.power.getValue().doubleValue(), //
+//							"ESS", p.ess.power.getValue().doubleValue(), //
+//							"ESSCharge", p.ess.charge.power.getValue().doubleValue(), //
+//							"ESSDischarge", p.ess.discharge.power.getValue().doubleValue(), //
+//							"ESSEnergy", p.ess.energy.getValue().doubleValue() / 60, //
+////							"EV0ChargeMode", p.evs.get(0).isCharged.getValue().doubleValue(), //
+////							"EV0Power", p.evs.get(0).charge.power.getValue().doubleValue(), //
+////							"EV0Energy", p.evs.get(0).energy.getValue().doubleValue() / 60, //
+////							"EV1ChargeMode", p.evs.get(1).isCharged.getValue().doubleValue(), //
+////							"EV1Power", p.evs.get(1).charge.power.getValue().doubleValue(), //
+////							"EV1Energy", p.evs.get(1).energy.getValue().doubleValue() / 60, //
+//							"PVPower", p.pv.power.prod, //
+//							"PV0Power", p.pvs.get(0).power.prod, //
+//							"PV1Power", p.pvs.get(1).power.prod, //
+//							"PV0SellPower", p.pvs.get(0).power.sell.getValue().doubleValue(), //
+//							"PV1SellPower", p.pvs.get(1).power.sell.getValue().doubleValue(), //
+//							"HHLoad", p.hh.power.cons//
+//					));
+//		}
+//	}
 
 	public void plot(EnergyModel schedule) {
 		Data gridBuy = Plot.data();
@@ -382,8 +424,8 @@ public class EnergyModel {
 		Data essDischarge = Plot.data();
 		Data pvProduction = Plot.data();
 		Data hhLoad = Plot.data();
-		Data ev0Power = Plot.data();
-		Data ev1Power = Plot.data();
+//		Data ev0Power = Plot.data();
+//		Data ev1Power = Plot.data();
 		for (int i = 0; i < this.periods.length; i++) {
 			Period p = this.periods[i];
 			gridBuy.xy(i, p.grid.buy.power.getValue().doubleValue());
@@ -392,8 +434,8 @@ public class EnergyModel {
 			essDischarge.xy(i, p.ess.discharge.power.getValue().doubleValue());
 			pvProduction.xy(i, p.pv.power.prod);
 			hhLoad.xy(i,  p.hh.power.cons);
-			ev0Power.xy(i, p.evs.get(0).charge.power.getValue().doubleValue());
-			ev1Power.xy(i, p.evs.get(1).charge.power.getValue().doubleValue());
+//			ev0Power.xy(i, p.evs.get(0).charge.power.getValue().doubleValue());
+//			ev1Power.xy(i, p.evs.get(1).charge.power.getValue().doubleValue());
 		}
 
 		Plot plot = Plot.plot(//
@@ -417,10 +459,10 @@ public class EnergyModel {
 						.color(Color.CYAN))
 				.series("HH",  hhLoad, Plot.seriesOpts() //
 						.color(Color.ORANGE))
-				.series("EV0", ev0Power, Plot.seriesOpts() //
-						.color(Color.LIGHT_GRAY))
-				.series("EV1", ev1Power, Plot.seriesOpts() //
-						.color(Color.LIGHT_GRAY))
+//				.series("EV0", ev0Power, Plot.seriesOpts() //
+//						.color(Color.LIGHT_GRAY))
+//				.series("EV1", ev1Power, Plot.seriesOpts() //
+//						.color(Color.LIGHT_GRAY))
 						
 						
 
