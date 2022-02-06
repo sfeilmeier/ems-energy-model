@@ -14,7 +14,7 @@ import static io.openems.controller.emsig.ojalgo.Constants.GRID_SELL_REVENUE0;
 import static io.openems.controller.emsig.ojalgo.Constants.GRID_SELL_REVENUE1;
 import static io.openems.controller.emsig.ojalgo.Constants.MINUTES_PER_PERIOD;
 import static io.openems.controller.emsig.ojalgo.Constants.PV_POWER;
-import static io.openems.controller.emsig.ojalgo.Constants.PV0_POWER;
+// import static io.openems.controller.emsig.ojalgo.Constants.PV0_POWER;
 // import static io.openems.controller.emsig.ojalgo.Constants.PV1_POWER;
 import static io.openems.controller.emsig.ojalgo.Constants.HH_LOAD;
 import static io.openems.controller.emsig.ojalgo.Constants.EV_AVAIL;
@@ -77,12 +77,12 @@ public class EnergyModel {
 			p.hh.power.cons = HH_LOAD[i];
 			
 			// In case of 2 PVs
-			final PV pv0 = new PV();
-			final PV pv1 = new PV();
-			p.pvs.add(pv0);
-			p.pvs.add(pv1);
-			p.pvs.get(0).power.prod = PV0_POWER[i];
-			p.pvs.get(1).power.prod = PV_POWER[i] - PV0_POWER[i];
+//			final PV pv0 = new PV();
+//			final PV pv1 = new PV();
+//			p.pvs.add(pv0);
+//			p.pvs.add(pv1);
+//			p.pvs.get(0).power.prod = PV0_POWER[i];
+//			p.pvs.get(1).power.prod = PV_POWER[i] - PV0_POWER[i];
 
 
 			/*
@@ -103,8 +103,8 @@ public class EnergyModel {
 					.upper(ESS_MAX_DISCHARGE);
 			p.ess.charge.power = model.addVariable("ESS_" + p.name + "_Charge_Power") //
 					.lower(0) //
-//	 				.upper(Math.min(ESS_MAX_CHARGE, p.pv.power.prod)) //
-					.upper(Math.min(ESS_MAX_CHARGE, p.pvs.get(0).power.prod + p.pvs.get(1).power.prod));
+	 				.upper(Math.min(ESS_MAX_CHARGE, p.pv.power.prod)); //
+//					.upper(Math.min(ESS_MAX_CHARGE, p.pvs.get(0).power.prod + p.pvs.get(1).power.prod));
 			model.addExpression("ESS_" + p.name + "_ChargeDischargePower_Expr") //
 					.set(p.ess.power, ONE) //
 					.set(p.ess.discharge.power, ONE.negate()) //
@@ -123,8 +123,7 @@ public class EnergyModel {
 //					.set(p.ess.isCharged, ESS_MAX_CHARGE) //
 //					.set(p.ess.charge.power, ONE.negate()) //
 //					.lower(0) //
-//					.upper(ESS_MAX_CHARGE);
-
+//					.upper(ESS_MAX_CHARGE);		
 			
 
 			// sum energy
@@ -280,25 +279,48 @@ public class EnergyModel {
 			// 0 = p.grid.power - grid.buy.power + p.grid.sell.power 
 			p.grid.power = model.addVariable("Grid_" + p.name + "_Power"); //
 			model.addExpression(p.name + "_Power_Balance") //
-			.set(p.ess.power, ONE) //
-			.set(p.grid.power, ONE) //
-			.set(p.ev.charge.power, ONE.negate()) //
-//			.set(p.evs.get(0).charge.power, ONE.negate()) //
-//			.set(p.evs.get(1).charge.power, ONE.negate()) //
-//			.level(p.hh.power.cons - p.pv.power.prod);
-			.level(p.hh.power.cons - p.pvs.get(0).power.prod - p.pvs.get(1).power.prod);
+					.set(p.ess.power, ONE) //
+					.set(p.grid.power, ONE) //
+					.set(p.ev.charge.power, ONE.negate()) //
+//					.set(p.evs.get(0).charge.power, ONE.negate()) //
+//					.set(p.evs.get(1).charge.power, ONE.negate()) //
+					.level(p.hh.power.cons - p.pv.power.prod);
+//					.level(p.hh.power.cons - p.pvs.get(0).power.prod - p.pvs.get(1).power.prod);
 			p.grid.buy.power = model.addVariable("Grid_" + p.name + "_Buy_Power") //
 					.lower(0) //
 					.upper(GRID_BUY_LIMIT);
 			p.grid.sell.power = model.addVariable("Grid_" + p.name + "_Sell_Power") //
 					.lower(0) //
-//					.upper(Math.min(p.pv.power.prod, GRID_SELL_LIMIT)); //
-					.upper(Math.min(p.pvs.get(0).power.prod + p.pvs.get(1).power.prod, GRID_SELL_LIMIT));
+					.upper(Math.min(p.pv.power.prod, GRID_SELL_LIMIT)); //
+//					.upper(Math.min(p.pvs.get(0).power.prod + p.pvs.get(1).power.prod, GRID_SELL_LIMIT));
 			model.addExpression("Grid_" + p.name + "_BuySellPower_Expr") //
 					.set(p.grid.power, ONE) //
 					.set(p.grid.buy.power, ONE.negate()) //
 					.set(p.grid.sell.power, ONE) //
 					.level(0);
+			
+			// New constraint: prefer ess.charge over grid.sell to make up
+			// for forecast errors concerning PV power and HH load
+			// Idea: if forecast indicates that the potential SoC undercuts the 
+			// 80% mark, prioritize charge over sell with scale 1:10
+			int pvPowerSum = 0;
+			int hhLoadSum = 0;
+			for (int j = 0; j < NO_OF_PERIODS/2+6; j++) {
+				pvPowerSum += PV_POWER[j];
+				hhLoadSum += HH_LOAD[j];
+			}
+			if (ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 + (EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 < ESS_MAX_ENERGY*60*80/100) {
+//			if (ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 < ESS_MAX_ENERGY*60*80/100) {
+			 if (i < NO_OF_PERIODS/2+4) {
+				 if (p.pv.power.prod -p.hh.power.cons <= ESS_MAX_CHARGE) {
+			 model.addExpression(p.name + "_Charge_Priority_Expr") //
+						.set(p.ess.charge.power, ONE) //
+						.set(p.grid.sell.power, -10) //
+						.lower(0) //
+						.upper(ESS_MAX_CHARGE);
+			} 
+			}
+			}
 			
 			// New constraint! Necessary in case of time-varying electricity tariffs:
 			// selling pv power and charging the ess with grid power can be 
@@ -335,28 +357,26 @@ public class EnergyModel {
 			
 			// We need to specify the portion of each PV contributing 
 			// to p.grid.sell.power
-			p.pvs.get(0).power.sell = model.addVariable(p.name + "_PV0_Sell_Power") //
-					.lower(0) //
-					.upper(p.pvs.get(0).power.prod);
-			p.pvs.get(1).power.sell = model.addVariable(p.name + "_PV1_Sell_Power") //
-					.lower(0) //
-					.upper(p.pvs.get(1).power.prod);
-				model.addExpression(p.name + "_PV_Sell_Power_Expr") //
-						.set(p.grid.sell.power, ONE.negate())
-						.set(p.pvs.get(0).power.sell, ONE) //
-						.set(p.pvs.get(1).power.sell, ONE) //
-						.level(0);
+//			p.pvs.get(0).power.sell = model.addVariable(p.name + "_PV0_Sell_Power") //
+//					.lower(0) //
+//					.upper(p.pvs.get(0).power.prod);
+//			p.pvs.get(1).power.sell = model.addVariable(p.name + "_PV1_Sell_Power") //
+//					.lower(0) //
+//					.upper(p.pvs.get(1).power.prod);
+//				model.addExpression(p.name + "_PV_Sell_Power_Expr") //
+//						.set(p.grid.sell.power, ONE.negate())
+//						.set(p.pvs.get(0).power.sell, ONE) //
+//						.set(p.pvs.get(1).power.sell, ONE) //
+//						.level(0);
 
-//			
 			
-			
-//			p.grid.buy.cost = GRID_BUY_COST[i];
-//			p.grid.sell.revenue = GRID_SELL_REVENUE[i];
+			p.grid.buy.cost = GRID_BUY_COST[i];
+			p.grid.sell.revenue = GRID_SELL_REVENUE[i];
 			
 			// In case of 2 PVs
-			p.grid.buy.cost = GRID_BUY_COST[i];
-			p.grid.sell.revenue[0] = GRID_SELL_REVENUE0[i];
-			p.grid.sell.revenue[1] = GRID_SELL_REVENUE1[i];
+//			p.grid.buy.cost = GRID_BUY_COST[i];
+//			p.grid.sell.revenue[0] = GRID_SELL_REVENUE0[i];
+//			p.grid.sell.revenue[1] = GRID_SELL_REVENUE1[i];
 		}
 	}
 	
@@ -364,8 +384,9 @@ public class EnergyModel {
 		for (int i = 0; i < this.periods.length; i++) {
 			Period p = this.periods[i];
 			System.out.println(
-					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5d  | %s %5d | %s %5d | %s %5.0f | %s %5.0f | %s %5d", i, //
-//					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f| %s %5d | %s %5d", i, //	
+//					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5d  | %s %5d | %s %5d | %s %5.0f | %s %5.0f | %s %5d", i, //
+					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f| %s %5d | %s %5d", i, //	
+//					String.format("%2d | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5.0f | %s %5d | %s %5d", i, //
 							"Grid", p.grid.power.getValue().doubleValue(), //
 							"GridBuy", p.grid.buy.power.getValue().doubleValue(), //
 							"GridSell", p.grid.sell.power.getValue().doubleValue(), //
@@ -377,10 +398,10 @@ public class EnergyModel {
 							"EVPower", p.ev.charge.power.getValue().doubleValue(), //
 							"EVEnergy", p.ev.energy.getValue().doubleValue() / 60,
 							"PVPower", p.pv.power.prod, //
-							"PV0Power", p.pvs.get(0).power.prod, //
-							"PV1Power", p.pvs.get(1).power.prod, //
-							"PV0SellPower", p.pvs.get(0).power.sell.getValue().doubleValue(), //
-							"PV1SellPower", p.pvs.get(1).power.sell.getValue().doubleValue(), //
+//							"PV0Power", p.pvs.get(0).power.prod, //
+//							"PV1Power", p.pvs.get(1).power.prod, //
+//							"PV0SellPower", p.pvs.get(0).power.sell.getValue().doubleValue(), //
+//							"PV1SellPower", p.pvs.get(1).power.sell.getValue().doubleValue(), //
 							"HHLoad", p.hh.power.cons//
 					));
 		}
@@ -424,6 +445,7 @@ public class EnergyModel {
 		Data essDischarge = Plot.data();
 		Data pvProduction = Plot.data();
 		Data hhLoad = Plot.data();
+		Data evPower = Plot.data();
 //		Data ev0Power = Plot.data();
 //		Data ev1Power = Plot.data();
 		for (int i = 0; i < this.periods.length; i++) {
@@ -434,6 +456,7 @@ public class EnergyModel {
 			essDischarge.xy(i, p.ess.discharge.power.getValue().doubleValue());
 			pvProduction.xy(i, p.pv.power.prod);
 			hhLoad.xy(i,  p.hh.power.cons);
+			evPower.xy(i,  p.ev.charge.power.getValue().doubleValue());
 //			ev0Power.xy(i, p.evs.get(0).charge.power.getValue().doubleValue());
 //			ev1Power.xy(i, p.evs.get(1).charge.power.getValue().doubleValue());
 		}
@@ -459,6 +482,8 @@ public class EnergyModel {
 						.color(Color.CYAN))
 				.series("HH",  hhLoad, Plot.seriesOpts() //
 						.color(Color.ORANGE))
+				.series("EV", evPower, Plot.seriesOpts() //
+						.color(Color.LIGHT_GRAY))
 //				.series("EV0", ev0Power, Plot.seriesOpts() //
 //						.color(Color.LIGHT_GRAY))
 //				.series("EV1", ev1Power, Plot.seriesOpts() //

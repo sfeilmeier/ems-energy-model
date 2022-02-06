@@ -24,6 +24,8 @@ import org.ojalgo.matrix.store.Primitive64Store;
 //import org.ojalgo.matrix.task.InverterTask;
 //import org.ojalgo.matrix.task.SolverTask;
 
+import static io.openems.controller.emsig.ojalgo.Constants.ESS_INITIAL_ENERGY;
+import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_CHARGE;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_ENERGY;
 import static io.openems.controller.emsig.ojalgo.Constants.HH_LOAD;
 import static io.openems.controller.emsig.ojalgo.Constants.NO_OF_PERIODS;
@@ -122,25 +124,25 @@ public class EnergyApp {
 		// gridSellRevenueSumExpr. = 0 = - gridSellRevenueSum +
 		// \sum_{i = 1}^{periods.length} periods[i].grid.sell.power *
 		// periods[i].grid.sell.revenue
-//		Variable gridSellRevenueSum = em.model.addVariable("Grid_Sell_Revenue_Sum");
-//		Expression gridSellRevenueSumExpr = em.model.addExpression("Grid_Sell_Revenue_Sum_Expr") //
-//				.set(gridSellRevenueSum, ONE.negate()); //
-//		for (Period p : em.periods) {
-//			gridSellRevenueSumExpr.set(p.grid.sell.power, p.grid.sell.revenue);
-//		}
-//		gridSellRevenueSumExpr.level(0);
-		
-		// In case of 2 PVs
 		Variable gridSellRevenueSum = em.model.addVariable("Grid_Sell_Revenue_Sum");
 		Expression gridSellRevenueSumExpr = em.model.addExpression("Grid_Sell_Revenue_Sum_Expr") //
 				.set(gridSellRevenueSum, ONE.negate()); //
 		for (Period p : em.periods) {
-			gridSellRevenueSumExpr.set(p.pvs.get(0).power.sell, p.grid.sell.revenue[0]);
-			gridSellRevenueSumExpr.set(p.pvs.get(1).power.sell, p.grid.sell.revenue[1]);
+			gridSellRevenueSumExpr.set(p.grid.sell.power, p.grid.sell.revenue);
 		}
 		gridSellRevenueSumExpr.level(0);
+		
+		// In case of 2 PVs
+//		Variable gridSellRevenueSum = em.model.addVariable("Grid_Sell_Revenue_Sum");
+//		Expression gridSellRevenueSumExpr = em.model.addExpression("Grid_Sell_Revenue_Sum_Expr") //
+//				.set(gridSellRevenueSum, ONE.negate()); //
+//		for (Period p : em.periods) {
+//			gridSellRevenueSumExpr.set(p.pvs.get(0).power.sell, p.grid.sell.revenue[0]);
+//			gridSellRevenueSumExpr.set(p.pvs.get(1).power.sell, p.grid.sell.revenue[1]);
+//		}
+//		gridSellRevenueSumExpr.level(0);
 
-		// Target function: Grid Exchange Cost
+		// Objective function: Grid Exchange Cost
 		em.model.addExpression("Grid Exchange Cost Sum") //
 				.set(gridBuyCostSum, ONE) //
 				.set(gridSellRevenueSum, ONE.negate()) //
@@ -265,8 +267,8 @@ public class EnergyApp {
 //		}
 		// At the end of the day we want a SoC of xy% 
 //			em.model.addExpression("ESS_Schedule") //
-//				.set(em.periods[95].ess.energy, ONE) // alternatively periods[60]
-//				.lower(ESS_MAX_ENERGY * 60 *10/100); // in Wmin
+//				.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+//				.lower(ESS_MAX_ENERGY * 60 *40/100); // in Wmin
 //				.lower((hhSum - pvSum)*15); // in Wmin
 //		}	
 //		// At end of HLZF2 battery is expected to be empty.
@@ -274,16 +276,35 @@ public class EnergyApp {
 //				.set(em.periods[28].ess.energy, ONE) 
 //				.level(ESS_MAX_ENERGY *60 *20/100);
 		
+		// If there is more production than consumption throughout
+		// the day, then impose a schedule constraint for the ESS
+		// At the end of the day, there is at least half of the 
+		// initial energy left in the ESS
+		int pvPowerSum = 0;
+		int hhLoadSum = 0;
+		for (int j = 0; j < NO_OF_PERIODS; j++) {
+			pvPowerSum += PV_POWER[j];
+			hhLoadSum += HH_LOAD[j];
+		}
+		if ((pvPowerSum - hhLoadSum)*15 +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 >= 0) {
+//		if ((pvPowerSum - hhLoadSum)*15 >= 0 {
+
+			em.model.addExpression("ESS_Schedule_Expr") //
+					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+					.lower(ESS_INITIAL_ENERGY*60/2); // in Wmin
+//					.lower(Math.max(ESS_INITIAL_ENERGY*60/2, EV_MAX_ENERGY*60/10)); // in Wmin
+		}
+		
 		
 		// At the end of the day the EV has to be fully charged.
 			em.model.addExpression("EV_Schedule") //
-				.set(em.periods[95].ev.energy, ONE) //
+				.set(em.periods[em.periods.length -1].ev.energy, ONE) //
 				.level(EV_MAX_ENERGY*60);
 		
 		// At the end of the day the EVs have to be fully charged.
 //		em.model.addExpression("EV0_Schedule") //
 //			.set(em.periods[167].evs.get(0).energy, ONE) //
-//			.lower(EV_MAX_ENERGY*60*80/100);
+//			.lower(EV_MAX_ENERGY*60*10/100);
 //		em.model.addExpression("EV1_Schedule") //
 //			.set(em.periods[167].evs.get(1).energy, ONE) //
 //			.level(EV_MAX_ENERGY*60);
