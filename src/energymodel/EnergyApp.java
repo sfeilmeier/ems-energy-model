@@ -29,6 +29,7 @@ import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_CHARGE;
 import static io.openems.controller.emsig.ojalgo.Constants.ESS_MAX_ENERGY;
 import static io.openems.controller.emsig.ojalgo.Constants.HH_LOAD;
 import static io.openems.controller.emsig.ojalgo.Constants.NO_OF_PERIODS;
+import static io.openems.controller.emsig.ojalgo.Constants.MINUTES_PER_PERIOD;
 import static io.openems.controller.emsig.ojalgo.Constants.EV_INITIAL_ENERGY;
 import static io.openems.controller.emsig.ojalgo.Constants.EV_MAX_ENERGY;
 import static io.openems.controller.emsig.ojalgo.Constants.EV_REQUIRED_ENERGY;
@@ -248,23 +249,7 @@ public class EnergyApp {
 //		em.model.addExpression("End of 1st HLZF") //
 //				.set(em.periods[5].ess.energy, ONE) // alternatively periods[20]
 //				.level(0);
-//		int index = 0;
-//		for (int i = 96; i < 144; i++) {
-//			if (PV_POWER[i] >= HH_LOAD[i]) {
-//				index = i;
-//			}
-//			break;
-//		}
-//		if (index > 0) {
-//		int pvSum = 0;
-//		for (int j = 96; j < index; j++) {
-//			pvSum += PV_POWER[j];
-//		}
-//			
-//		int hhSum = 0;
-//		for (int k = 96; k < index; k++) {
-//			hhSum += HH_LOAD[k];
-//		}
+
 		// At the end of the day we want a SoC of xy% 
 //			em.model.addExpression("ESS_Schedule") //
 //				.set(em.periods[em.periods.length -1].ess.energy, ONE) //
@@ -276,24 +261,46 @@ public class EnergyApp {
 //				.set(em.periods[28].ess.energy, ONE) 
 //				.level(ESS_MAX_ENERGY *60 *20/100);
 		
-		// If there is more production than consumption throughout
-		// the day, then impose a schedule constraint for the ESS
-		// At the end of the day, there is at least half of the 
-		// initial energy left in the ESS
+		// A first approach for proper ESS scheduling concerning
+		// the SoC at the end of the day
+		// With the present specifications, the model is prone to
+		// provide maximal autarchy of the EMS
 		int pvPowerSum = 0;
 		int hhLoadSum = 0;
-		for (int j = 0; j < NO_OF_PERIODS; j++) {
-			pvPowerSum += PV_POWER[j];
-			hhLoadSum += HH_LOAD[j];
+		for (Period p : em.periods) {
+			pvPowerSum += p.pv.power.prod;
+			hhLoadSum += p.hh.power.cons;
 		}
-		if ((pvPowerSum - hhLoadSum)*15 +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 >= 0) {
-//		if ((pvPowerSum - hhLoadSum)*15 >= 0 {
-
+		if ((pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 >= ESS_MAX_ENERGY*60) {
 			em.model.addExpression("ESS_Schedule_Expr") //
 					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-					.lower(ESS_INITIAL_ENERGY*60/2); // in Wmin
-//					.lower(Math.max(ESS_INITIAL_ENERGY*60/2, EV_MAX_ENERGY*60/10)); // in Wmin
+					.lower(ESS_MAX_ENERGY*60*60/100);
+		} else if ( ESS_MAX_ENERGY*60 >=(pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 && (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 >= ESS_MAX_CHARGE*60*50/100) { 
+			em.model.addExpression("ESS_Schedule_Expr") //
+					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+					.lower(ESS_MAX_ENERGY*60*50/100);
+		} else if ( ESS_MAX_CHARGE*60*50/100 >= (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 && (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 >= 0) {
+					if (ESS_INITIAL_ENERGY >= ESS_MAX_ENERGY*50/100) {
+						em.model.addExpression("ESS_Schedule_Expr") //
+							.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+							.lower(ESS_MAX_ENERGY*60*50/100);
+					} else {
+						em.model.addExpression("ESS_Schedule_Expr") //
+								.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+								.lower(Math.min(ESS_INITIAL_ENERGY*60 + 0.5*((pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60), ESS_MAX_ENERGY*60*35/100));
+					}
 		}
+		else if ( 0 >= (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 && (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 >= -1*ESS_MAX_ENERGY*60*50/100) {
+			em.model.addExpression("ESS_Schedule_Expr") //
+					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+					.lower(Math.max(0, ESS_INITIAL_ENERGY*60 + 2*((pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60)));
+		}
+		
+//        if ((pvPowerSum - hhLoadSum)*15 +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 >= 0) {
+//            em.model.addExpression("ESS_Schedule_Expr") //
+//            .set(em.periods[em.periods.length -1].ess.energy, ONE) //
+//            .lower(ESS_INITIAL_ENERGY*60/2); // in Wmin
+//        }
 		
 		
 		// At the end of the day the EV has to be fully charged.

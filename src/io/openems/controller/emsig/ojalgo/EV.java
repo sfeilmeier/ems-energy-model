@@ -12,6 +12,7 @@ public class EV {
 	public final Charge charge = new Charge();
 	
 	public Variable energy = null;
+	public double isAvail;
 	public Variable isCharged;
 	
 	public EV() {

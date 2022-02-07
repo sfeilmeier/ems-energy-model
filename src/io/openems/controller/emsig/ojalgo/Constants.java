@@ -13,7 +13,7 @@ public class Constants {
 	public final static int GRID_SELL_LIMIT = 30000; // [W]
 	public final static int GRID_BUY_LIMIT = 30000; // [W]
 
-	public final static int ESS_INITIAL_ENERGY = 1000; // [Wh] //
+	public final static int ESS_INITIAL_ENERGY = 25000; // [Wh] //
 	public final static int ESS_MIN_ENERGY = 0; // [Wh]
 	public final static int ESS_MAX_ENERGY = 44000; // [Wh] Fems4: 44000 Fems2541: ?
 	public final static int ESS_MAX_CHARGE = 10000; // [W]
@@ -470,9 +470,9 @@ public class Constants {
 			0, 0, 0, 0,
 			0, 0, 0, 0
 	};
-//	
-//	
-//	// Fems2541 22.08.21 
+	
+	
+	// Fems2541 22.08.21 
 //	public final static int[] PV0_POWER = {
 //			0, 0, 0, 0,
 //			0, 0, 0, 0,
