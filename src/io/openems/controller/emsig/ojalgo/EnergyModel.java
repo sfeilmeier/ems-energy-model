@@ -67,6 +67,22 @@ public class EnergyModel {
 		model = new ExpressionsBasedModel(options);
 		
 		
+		// New constraint: prefer ess.charge over grid.sell to make up
+		// for forecast errors concerning PV power and HH load
+		
+		// Find first index such that the potential ess energy exceeds
+		// the max energy; for all periods smaller than said index
+		// impose a new ess charging constraint (prioritization)
+		// TODO the present approach does not yield 
+		// the actual potential ess energy; 
+		// a priori, we do not know how much energy is really used to 
+		// serve the load, and we have charging limitations and efficiencies
+		// However, it is a reasonable guiding principle and yields
+		// promising simulation results
+		int pvSum = 0;
+		int hhSum = 0;
+//		int potentialEnergy = ESS_INITIAL_ENERGY*60;
+		
 		// Initialize Periods
 		this.periods = new Period[NO_OF_PERIODS];
 		for (int i = 0; i < periods.length; i++) {
@@ -74,10 +90,12 @@ public class EnergyModel {
 			periods[i] = p;
 			
 			// specify the PV power and the HH load for each period
-			p.pv.power.prod = PV_POWER[i];
-			p.hh.power.cons = HH_LOAD[i];
+			p.pv.power.prod = PV_POWER[i]*2;
+			p.hh.power.cons = HH_LOAD[i]*3;
 			p.ev.isAvail = EV_AVAIL[i];
 			
+			pvSum += p.pv.power.prod;
+			hhSum += p.hh.power.cons;
 			
 			// In case of 2 PVs
 //			final PV pv0 = new PV();
@@ -118,7 +136,7 @@ public class EnergyModel {
 			
 			// within a period, only charging XOR discharging is allowed
 //			if (p.pv.power.prod > p.hh.power.cons) {
-			if (p.pv.power.prod > 1000) {
+			if (p.pv.power.prod > 750) {
 			p.ess.isCharged = model.addVariable("ESS_" + p.name + "_Charge_Mode") //
 					.binary();
 			model.addExpression("ESS_" + p.name + "_Charge_Mode_Expr") //
@@ -160,8 +178,9 @@ public class EnergyModel {
 			//  p.ess.energy = periods[i-1].ess.energy - p.ess.power*MINUTES_PER_PERIOD - ESS_EFFICIENCY*60		
 			
 			// Evenly distributed charging
-			// Note: in case of a time-varying electricity rate this
-			// constraint should not be imposed 
+			// Note: this will most likely interfere the 
+			// priorization of ess charging over grid selling
+			// so that the resulting linear proram is not feasible
 //			if (i == 0) {
 //				p.ess.charge.power.upper(ESS_MAX_CHARGE_DIFFERENCE);
 //		} else {
@@ -182,35 +201,35 @@ public class EnergyModel {
 			p.ev.charge.power = model.addVariable("EV_" + p.name + "_Charge_Power") //
 					.lower(0) //
 					.upper(EV_MAX_CHARGE);
-//			p.ev.isCharged = model.addVariable("EV_" + p.name + "_Charge_Mode") //
-//					.binary();
-//			 	model.addExpression("EV_" + p.name + "_Charge_Decision_Expr") //
-//		 			.set(p.ev.isCharged, ONE) //
-//		 			.lower(1 -p.ev.isAvail);
-//			 	model.addExpression("EV_" + p.name + "_Charge_Power_Expr") //
-//		 			.set(p.ev.isCharged, EV_MAX_CHARGE) //
-//		 			.set(p.ev.charge.power, ONE) //
-//		 			.lower(EV_MIN_CHARGE) //
-//		 			.upper(EV_MAX_CHARGE);
-//			
-//			// EV energy
-//			// p.ev.energy = p.ev.charge.power*MINUTES_PER_PERIODS
-//			// In particular, assume a minimum EV charge power of 100
+			p.ev.isCharged = model.addVariable("EV_" + p.name + "_Charge_Mode") //
+					.binary();
+			 	model.addExpression("EV_" + p.name + "_Charge_Decision_Expr") //
+		 			.set(p.ev.isCharged, ONE) //
+		 			.lower(1 -p.ev.isAvail);
+			 	model.addExpression("EV_" + p.name + "_Charge_Power_Expr") //
+		 			.set(p.ev.isCharged, EV_MAX_CHARGE) //
+		 			.set(p.ev.charge.power, ONE) //
+		 			.lower(EV_MIN_CHARGE) //
+		 			.upper(EV_MAX_CHARGE);
+			
+			// EV energy
+			// p.ev.energy = p.ev.charge.power*MINUTES_PER_PERIODS
+			// In particular, assume a minimum EV charge power of 100
 			p.ev.energy = model.addVariable("EV_" + p.name + "Energy") //
 					.lower(0) //
 					.upper(EV_MAX_ENERGY * 60); // [Wmin]
-//			if (i == 0) {
-//			model.addExpression(p.name + "_EV_Energy_Expr") //
-//				.set(p.ev.energy, ONE) //
-//				.set(p.ev.charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-//				.level(EV_INITIAL_ENERGY *60);
-//			} else {
-//				model.addExpression(p.name + "_EV_Energy_Expr") //
-//				.set(p.ev.energy, ONE.negate()) //
-//				.set(p.ev.charge.power, MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-//				.set(periods[i-1].ev.energy, ONE) //
-//				.level(0);
-//			}
+			if (i == 0) {
+			model.addExpression(p.name + "_EV_Energy_Expr") //
+				.set(p.ev.energy, ONE) //
+				.set(p.ev.charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
+				.level(EV_INITIAL_ENERGY *60);
+			} else {
+				model.addExpression(p.name + "_EV_Energy_Expr") //
+				.set(p.ev.energy, ONE.negate()) //
+				.set(p.ev.charge.power, MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
+				.set(periods[i-1].ev.energy, ONE) //
+				.level(0);
+			}
 			
 //		// In case of multiple EVs
 //		// TODO currently 2, but this has to be generalized eventually
@@ -289,7 +308,7 @@ public class EnergyModel {
 			model.addExpression(p.name + "_Power_Balance") //
 					.set(p.ess.power, ONE) //
 					.set(p.grid.power, ONE) //
-//					.set(p.ev.charge.power, ONE.negate()) //
+				.set(p.ev.charge.power, ONE.negate()) //
 //					.set(p.evs.get(0).charge.power, ONE.negate()) //
 //					.set(p.evs.get(1).charge.power, ONE.negate()) //
 					.level(p.hh.power.cons - p.pv.power.prod);
@@ -306,69 +325,45 @@ public class EnergyModel {
 					.set(p.grid.buy.power, ONE.negate()) //
 					.set(p.grid.sell.power, ONE) //
 					.level(0);
+				
 			
-			// New constraint: prefer ess.charge over grid.sell to make up
-			// for forecast errors concerning PV power and HH load
-			// Idea: if forecast indicates that the potential SoC does not
-			// reach 100% after 13:00, then charge power should be at least
-			// 95% of the "free" power
-//			int pvPowerSum = 0;
-//			int hhLoadSum = 0;
-//			for (int j = 0; j < NO_OF_PERIODS/2+4; j++) {
-//				pvPowerSum += PV_POWER[j];
-//				hhLoadSum += HH_LOAD[j];
-//			}
-//			
-//			if (ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD < ESS_MAX_ENERGY*60) {
-//			 if (i < NO_OF_PERIODS/2+4) {
-//				 model.addExpression(p.name + "...") //
-//				 		.set(p.ess.charge.power, ONE) //
-//				 		.lower(Math.min(ESS_MAX_CHARGE, (p.pv.power.prod - p.hh.power.cons)));
-//			}
-//			} else if (ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60 && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD + (EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 < ESS_MAX_ENERGY*60) {
-//			if (i < NO_OF_PERIODS/2 +4) {
-//				model.addExpression(p.name + "...") //
-//		 		.set(p.ess.charge.power, ONE) //
-//		 		.lower(Math.min(ESS_MAX_CHARGE*95/100, (p.pv.power.prod - p.hh.power.cons)*95/100));
-//			}
-//			}
-			
-			
-
-			
-			// Find first index such that the potential ess energy exceeds
-			// the max energy; for all periods smaller than said index
-			// impose a new ess charging constraint (prioritization)
-			int potentialPowerIndex = -1;
-			int pvSum = 0;
-			int hhSum = 0;
-			for (int j = 0; j < NO_OF_PERIODS; j ++) {
-				pvSum += PV_POWER[j];
-				hhSum += HH_LOAD[j];
-				if (ESS_INITIAL_ENERGY*60 + (pvSum - hhSum)*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60)  {
-					potentialPowerIndex = j;
-					break;
-				}
-			}
-			
-			if (potentialPowerIndex == -1) {
-				model.addExpression(p.name + "_ESS_Charge_Constraint_Expr") //
-					.set(p.ess.charge.power, ONE) //
-					.lower(0.9*Math.min(ESS_MAX_CHARGE, p.pv.power.prod - p.hh.power.cons));
-			}
-			else if (0 < potentialPowerIndex) {
-				if (i < potentialPowerIndex) {
+			// Condition to check whether for the present period, the additional 
+			// ess constraint is imposed or not
+			if (ESS_INITIAL_ENERGY*60 + (pvSum - hhSum)*MINUTES_PER_PERIOD <= ESS_MAX_ENERGY*60 - ESS_MAX_CHARGE*MINUTES_PER_PERIOD*0.9)  {
 					model.addExpression(p.name + "_ESS_Charge_Constraint_Expr") //
-					.set(p.ess.charge.power, ONE) //
-					.lower(0.9*Math.min(ESS_MAX_CHARGE, Math.max(0, p.pv.power.prod - p.hh.power.cons)));
+							.set(p.ess.charge.power, ONE) //
+							.lower(0.9*Math.min(ESS_MAX_CHARGE, Math.max(0, p.pv.power.prod - p.hh.power.cons)));
 				}
-			}
+			
+			
+		
+//			int potentialEnergyIndex = -1;
+//			
+//			for (int j = 0; j < NO_OF_PERIODS; j++) {
+//				if (HH_LOAD[j] >= PV_POWER[j]) {
+//					potentialEnergySum = Math.max(0, potentialEnergySum +(PV_POWER[j] - HH_LOAD[j])*MINUTES_PER_PERIOD*90/100);  
+//				} else {
+//				int potentialCharge = Math.min(ESS_MAX_CHARGE, PV_POWER[j] - HH_LOAD[j]);
+//				if (potentialEnergySum + potentialCharge*MINUTES_PER_PERIOD*ESS_CHARGE_EFFICIENCY/100 > ESS_MAX_ENERGY*60) {
+//					potentialEnergyIndex = j;
+//					break;
+//				} else {
+//					potentialEnergySum += potentialCharge*MINUTES_PER_PERIOD*ESS_CHARGE_EFFICIENCY/100;
+//				}
+//			}
+//			}
+			
+			
+			 
+	
 			
 			
 			// New constraint! Necessary in case of time-varying electricity tariffs:
 			// selling pv power and charging the ess with grid power can be 
 			// beneficial (whenever sell revenue exceeds buy cost)
 			// We only allow gridBuy XOR gridSell within a period 
+			// Alternatively (and for the sake of better runtime), add a fixed and 
+			// suitable value to p.grid.buy.cost
 //			p.grid.isBuy = model.addVariable("Grid_" + p.name + "_isBuy") //
 //					.binary();
 //			model.addExpression(p.name + "_Grid_Buy_XOR_Grid_Sell_Expr") //
@@ -400,8 +395,8 @@ public class EnergyModel {
 //					.upper(GRID_BUY_LIMIT);
 			
 			
-			// We need to specify the portion of each PV contributing 
-			// to p.grid.sell.power
+			// In case of 2 PVs we need to specify the portion of each PV 
+			// contributing to p.grid.sell.power
 //			p.pvs.get(0).power.sell = model.addVariable(p.name + "_PV0_Sell_Power") //
 //					.lower(0) //
 //					.upper(p.pvs.get(0).power.prod);

@@ -254,7 +254,7 @@ public class EnergyApp {
 //			em.model.addExpression("ESS_Schedule") //
 //				.set(em.periods[em.periods.length -1].ess.energy, ONE) //
 //				.lower(ESS_MAX_ENERGY * 60 *40/100); // in Wmin
-//				.lower((hhSum - pvSum)*15); // in Wmin
+//				.lower((hhSum - pvSum)*MINUTES_PER_PERIOD); // in Wmin
 //		}	
 
 		
@@ -262,10 +262,12 @@ public class EnergyApp {
 		// undercuts hhload and summarize the power difference
 		// starting at this index 
 		// This is important for the ess schedule constraint
+		// TODO write this w.r.t. p.pv.power.prod and p.hh.power.cons 
+		
 		int hhMoreThanpvIndex = 0;
-		for (int j = NO_OF_PERIODS-1; j >= 0; j--) {
-			if (PV_POWER[j] >= HH_LOAD[j]) {
-				if (j == NO_OF_PERIODS-1) {
+		for (int j = em.periods.length -1; j >= 0; j--) {
+			if (em.periods[j].pv.power.prod >= em.periods[j].hh.power.cons) {
+				if (j == em.periods.length -1) {
 					hhMoreThanpvIndex = j;
 				} else {
 						hhMoreThanpvIndex = j+1;
@@ -273,10 +275,22 @@ public class EnergyApp {
 				break;
 		}
 		}
+//		int indexDummy = 0;
+//		for (Period p : em.periods) {
+//			indexDummy++;
+//			if (p.pv.power.prod >= p.hh.power.cons) {
+//				if (indexDummy == em.periods.length -1 ) {
+//					hhMoreThanpvIndex = indexDummy;
+//				} else {
+//				hhMoreThanpvIndex = indexDummy + 1;
+//			}
+//		}
+//		}
+
 		
-		int pvhhDifference = 0;
-		for (int j = hhMoreThanpvIndex; j < NO_OF_PERIODS; j++) {
-			pvhhDifference = pvhhDifference + PV_POWER[j] - HH_LOAD[j]; 
+		int  endOfDayLoad= 0;
+		for (int j = hhMoreThanpvIndex; j < em.periods.length; j++) {
+			endOfDayLoad = endOfDayLoad + em.periods[j].pv.power.prod - em.periods[j].hh.power.cons; 
 		}
 		
 		// A first approach for proper ESS scheduling concerning
@@ -290,69 +304,59 @@ public class EnergyApp {
 			hhLoadSum += p.hh.power.cons;
 		}
 		// Impose schedule constraints for the ess
-		// depending on ESS_INITIAL_ENERGY, pvPowerSum, hhLoadSum, and pvhhDifference
-		if (ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 >= ESS_MAX_ENERGY*60) {
+		// depending on ESS_INITIAL_ENERGY, pvPowerSum, hhLoadSum, and endOfDayLoad
+//		if (ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60) {
+//			em.model.addExpression("ESS_Schedule_Expr") //
+//					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+//					.lower(Math.min(ESS_MAX_ENERGY*60*85/100,  Math.max(0,ESS_MAX_ENERGY*60*90/100 + endOfDayLoad*15*1.1)));
+//		} else if (ESS_MAX_ENERGY*60 > ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60*75/100) {
+//			em.model.addExpression("ESS_Schedule_Expr") //
+//					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+//					.lower(Math.min(ESS_MAX_ENERGY*60*75/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
+//		} else if (ESS_MAX_ENERGY*60*75/100 > ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60*50/100) {
+//			em.model.addExpression("ESS_Schedule_Expr") //
+//			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+//			.lower(Math.min(ESS_MAX_ENERGY*60*50/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
+//		} else if (ESS_MAX_ENERGY*60*50/100 > ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60*25/100) {
+//			em.model.addExpression("ESS_Schedule_Expr") //
+//			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+//			.lower(Math.min(ESS_MAX_ENERGY*60*25/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
+//		} else {
+//			em.model.addExpression("ESS_Schedule_Expr") //
+//			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+//			.lower(Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD + endOfDayLoad*MINUTES_PER_PERIOD*1.1));
+//		}
+		
+		
+		// If we add an EV to the model
+		if (ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 >= ESS_MAX_ENERGY*60) {
 			em.model.addExpression("ESS_Schedule_Expr") //
 					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-					.lower(Math.min(ESS_MAX_ENERGY*60*85/100,  Math.max(0,ESS_MAX_ENERGY*60 + pvhhDifference*15*1.1)));
-		} else if (ESS_MAX_ENERGY*60 >= ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 >= ESS_MAX_ENERGY*60*75/100) {
+					.lower(Math.min(ESS_MAX_ENERGY*60*80/100,  Math.max(0, ESS_MAX_ENERGY*60*90/100 +  endOfDayLoad*MINUTES_PER_PERIOD*1.1 - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1)));
+		} else if (ESS_MAX_ENERGY*60 >= ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60  && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60  >= ESS_MAX_ENERGY*60*75/100) {
 			em.model.addExpression("ESS_Schedule_Expr") //
 					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-					.lower(Math.min(ESS_MAX_ENERGY*60*75/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 + pvhhDifference*15*1.1)));
-		} else if (ESS_MAX_ENERGY*60*75/100 >= ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 >= ESS_MAX_ENERGY*60*50/100) {
+					.lower(Math.min(ESS_MAX_ENERGY*60*60/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
+		} else if (ESS_MAX_ENERGY*60*75/100 >= ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 >= ESS_MAX_ENERGY*60*50/100) {
 			em.model.addExpression("ESS_Schedule_Expr") //
 			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-			.lower(Math.min(ESS_MAX_ENERGY*60*50/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 + pvhhDifference*15*1.1)));
-		} else if (ESS_MAX_ENERGY*60*50/100 >= ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 >= ESS_MAX_ENERGY*60*25/100) {
+			.lower(Math.min(ESS_MAX_ENERGY*60*40/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
+		} else if (ESS_MAX_ENERGY*60*50/100 >= ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 >= ESS_MAX_ENERGY*60*25/100) {
 			em.model.addExpression("ESS_Schedule_Expr") //
 			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-			.lower(Math.min(ESS_MAX_ENERGY*60*25/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 + pvhhDifference*15*1.1)));
+			.lower(Math.min(ESS_MAX_ENERGY*60*20/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
 		} else {
 			em.model.addExpression("ESS_Schedule_Expr") //
 			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-			.lower(Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*15 + pvhhDifference*15*1.1));
+			.lower(Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + endOfDayLoad*MINUTES_PER_PERIOD*1.1));
 		}
 		
 		
 		
-		
-		// If we add an EV to the model TODO
-//		if ((pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 >= ESS_MAX_ENERGY*60) {
-//			em.model.addExpression("ESS_Schedule_Expr") //
-//					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-//					.lower(ESS_MAX_ENERGY*60*60/100);
-//		} else if ( ESS_MAX_ENERGY*60 >=(pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 && (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 >= ESS_MAX_CHARGE*60*50/100) { 
-//			em.model.addExpression("ESS_Schedule_Expr") //
-//					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-//					.lower(ESS_MAX_ENERGY*60*50/100);
-//		} else if ( ESS_MAX_CHARGE*60*50/100 >= (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 && (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 >= 0) {
-//					if (ESS_INITIAL_ENERGY >= ESS_MAX_ENERGY*50/100) {
-//						em.model.addExpression("ESS_Schedule_Expr") //
-//							.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-//							.lower(ESS_MAX_ENERGY*60*50/100);
-//					} else {
-//						em.model.addExpression("ESS_Schedule_Expr") //
-//								.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-//								.lower(Math.min(ESS_INITIAL_ENERGY*60 + 0.5*((pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60), ESS_MAX_ENERGY*60*35/100));
-//					}
-//		}
-//		else if ( 0 >= (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 && (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 >= -1*ESS_MAX_ENERGY*60*50/100) {
-//			em.model.addExpression("ESS_Schedule_Expr") //
-//					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-//					.lower(Math.max(0, ESS_INITIAL_ENERGY*60 + 2*((pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60)));
-//		}
-		
-//        if ((pvPowerSum - hhLoadSum)*15 +(EV_INITIAL_ENERGY - EV_MAX_ENERGY)*60 >= 0) {
-//            em.model.addExpression("ESS_Schedule_Expr") //
-//            .set(em.periods[em.periods.length -1].ess.energy, ONE) //
-//            .lower(ESS_INITIAL_ENERGY*60/2); // in Wmin
-//        }
-		
-		
 		// At the end of the day the EV has to be fully charged.
-//			em.model.addExpression("EV_Schedule") //
-//				.set(em.periods[em.periods.length -1].ev.energy, ONE) //
-//				.level(EV_MAX_ENERGY*60);
+			em.model.addExpression("EV_Schedule") //
+				.set(em.periods[em.periods.length -1].ev.energy, ONE) //
+				.level(EV_MAX_ENERGY*60);
 		
 		// At the end of the day the EVs have to be fully charged.
 //		em.model.addExpression("EV0_Schedule") //
@@ -361,16 +365,7 @@ public class EnergyApp {
 //		em.model.addExpression("EV1_Schedule") //
 //			.set(em.periods[167].evs.get(1).energy, ONE) //
 //			.level(EV_MAX_ENERGY*60);
-
-//		// TODO Grid-Sell can never be more than Production. This simple model assumes
-//		// no production, so Grid-Sell must be zero - at least outside of HLZF period.
-//		for (int i = 0; i < 6; i++) { // alternatively i = 0; i <19; i++
-//			em.periods[i].grid.sell.power.upper(GRID_SELL_LIMIT);
-//		}
-//		for (int i = 18; i < 23; i++) { 
-//			em.periods[i].grid.sell.power.upper(GRID_SELL_LIMIT);
-//		}
-//				
+			
 	}
 
 }
