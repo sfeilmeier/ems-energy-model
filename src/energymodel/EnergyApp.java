@@ -161,27 +161,9 @@ public class EnergyApp {
 		// In particular, 1/(\sqrt{NO_OF_PERIODS -1}) ||x||_2 <= ||x||_{\infty}.
 		// Hence, one might weight the resulting target function with/by (?)
 		// 1/(\sqrt{NO_OF_PERIODS -1}).
-		// By doing so, that target function is bounded by [0, (ESS_MAX_CHARGE)^2] 
+		// By doing so, that target function is bounded by [0, (ESS_MAX_CHARGE)^2] 		
 		
-		// RESOLVED
-		// Decide whether the ESS is charged or discharged within a period.
-		// Introduce the charging and discharging mode and allow charge XOR discharge.
-		// Since it is not possible (yet) to impose a constraint concerning the
-		// multiplication of two variables ("quadratic constraint"), we define this as an
-		// additional target function with minimum value 0.
-		// TODO runtime: an hour
-//		for (Period p : em.periods) {
-//		em.model.addExpression("ESS_" + p.name + "Charge_Constraint_Expr") //
-//				.set(p.ess.charge.mode, p.ess.discharge.power, 1.0) //
-//				.weight(1);
-//		em.model.addExpression("ESS_" + p.name + "Discharge_Constraint_Expr") //
-//				.set(p.ess.discharge.mode, p.ess.charge.power, 1.0) //
-//				.weight(1);	
-//
-//		}
-		
-		
-		// define NO_OF_PERIODS -1 additional variables and minimize
+		// Define NO_OF_PERIODS -1 additional variables and minimize
 		// the sum of their squares
 		//charDiff(i) = em.periods[i+1].ess.charge.power - em.periods[i].ess.charge.power
 //		List<Variable> charDiffs = new ArrayList<>();
@@ -208,24 +190,7 @@ public class EnergyApp {
 //		Expression evenlyDistributedCharge = em.model.addExpression("Evenly Distributed Charge");
 //			evenlyDistributedCharge.setQuadraticFactors(charDiffs, identity);
 //		//	evenlyDistributedCharge.weight(ONE);
-//			evenlyDistributedCharge.weight(1/Math.sqrt(NO_OF_PERIODS -1));	
-			
-			
-		// New constraint: the EV is supposed to be charged with EV_REQUIRED_ENERGY at least,
-		// and with EV_MAX_ENERGY - EV_INITIAL_ENERGY at most
-		// TODO Problem: runtime (almost 10 minutes)
-//			Expression minRequiredCharge = em.model.addExpression("Minimum_Required_Charging");
-//				for (Period p : em.periods) {
-//					minRequiredCharge.set(p.ev.energy, ONE);
-//				}
-//				minRequiredCharge.lower(EV_REQUIRED_ENERGY * 60);
-//				minRequiredCharge.upper((EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60);
-//				minRequiredCharge.level(EV_REQUIRED_ENERGY * 60);
-			
-//		em.model.addExpression("Minimum_Required_Charging") //
-//			.set(em.periods[NO_OF_PERIODS-1].ev.energy,  ONE) //
-//			.lower(EV_REQUIRED_ENERGY*60);
-			
+//			evenlyDistributedCharge.weight(1/Math.sqrt(NO_OF_PERIODS -1));				
 
 		em.model.minimise();
 		// Result result = em.model.minimise();
@@ -245,7 +210,6 @@ public class EnergyApp {
 //		 */
 //		// We assume that there are 2 HLZFs
 //		// At end of HLZF1 battery is expected to be empty
-//		// 0 = 1*e[5]
 //		em.model.addExpression("End of 1st HLZF") //
 //				.set(em.periods[5].ess.energy, ONE) // alternatively periods[20]
 //				.level(0);
@@ -262,7 +226,6 @@ public class EnergyApp {
 		// undercuts hhload and summarize the power difference
 		// starting at this index 
 		// This is important for the ess schedule constraint
-		// TODO write this w.r.t. p.pv.power.prod and p.hh.power.cons 
 		
 		int hhMoreThanpvIndex = 0;
 		for (int j = em.periods.length -1; j >= 0; j--) {
@@ -275,18 +238,6 @@ public class EnergyApp {
 				break;
 		}
 		}
-//		int indexDummy = 0;
-//		for (Period p : em.periods) {
-//			indexDummy++;
-//			if (p.pv.power.prod >= p.hh.power.cons) {
-//				if (indexDummy == em.periods.length -1 ) {
-//					hhMoreThanpvIndex = indexDummy;
-//				} else {
-//				hhMoreThanpvIndex = indexDummy + 1;
-//			}
-//		}
-//		}
-
 		
 		int  endOfDayLoad= 0;
 		for (int j = hhMoreThanpvIndex; j < em.periods.length; j++) {
@@ -308,7 +259,7 @@ public class EnergyApp {
 //		if (ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60) {
 //			em.model.addExpression("ESS_Schedule_Expr") //
 //					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-//					.lower(Math.min(ESS_MAX_ENERGY*60*85/100,  Math.max(0,ESS_MAX_ENERGY*60*90/100 + endOfDayLoad*15*1.1)));
+//					.lower(Math.min(ESS_MAX_ENERGY*60*85/100,  Math.max(0,ESS_MAX_ENERGY*60*90/100 + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
 //		} else if (ESS_MAX_ENERGY*60 > ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60*75/100) {
 //			em.model.addExpression("ESS_Schedule_Expr") //
 //					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
@@ -332,23 +283,23 @@ public class EnergyApp {
 		if (ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 >= ESS_MAX_ENERGY*60) {
 			em.model.addExpression("ESS_Schedule_Expr") //
 					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-					.lower(Math.min(ESS_MAX_ENERGY*60*80/100,  Math.max(0, ESS_MAX_ENERGY*60*90/100 +  endOfDayLoad*MINUTES_PER_PERIOD*1.1 - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1)));
+					.lower(Math.min(ESS_MAX_ENERGY*60*80/100,  Math.max(0, ESS_MAX_ENERGY*60*90/100 + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*1.1) - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1)));
 		} else if (ESS_MAX_ENERGY*60 >= ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60  && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60  >= ESS_MAX_ENERGY*60*75/100) {
 			em.model.addExpression("ESS_Schedule_Expr") //
 					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-					.lower(Math.min(ESS_MAX_ENERGY*60*60/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
+					.lower(Math.min(ESS_MAX_ENERGY*60*60/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*1.1))));
 		} else if (ESS_MAX_ENERGY*60*75/100 >= ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 >= ESS_MAX_ENERGY*60*50/100) {
 			em.model.addExpression("ESS_Schedule_Expr") //
 			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-			.lower(Math.min(ESS_MAX_ENERGY*60*40/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
+			.lower(Math.min(ESS_MAX_ENERGY*60*40/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*1.1))));
 		} else if (ESS_MAX_ENERGY*60*50/100 >= ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 >= ESS_MAX_ENERGY*60*25/100) {
 			em.model.addExpression("ESS_Schedule_Expr") //
 			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-			.lower(Math.min(ESS_MAX_ENERGY*60*20/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
+			.lower(Math.min(ESS_MAX_ENERGY*60*20/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*1.1))));
 		} else {
 			em.model.addExpression("ESS_Schedule_Expr") //
 			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-			.lower(Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + endOfDayLoad*MINUTES_PER_PERIOD*1.1));
+			.lower(Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
 		}
 		
 		
@@ -357,7 +308,8 @@ public class EnergyApp {
 			em.model.addExpression("EV_Schedule") //
 				.set(em.periods[em.periods.length -1].ev.energy, ONE) //
 				.level(EV_MAX_ENERGY*60);
-		
+			
+		// In case of 2 EVs
 		// At the end of the day the EVs have to be fully charged.
 //		em.model.addExpression("EV0_Schedule") //
 //			.set(em.periods[167].evs.get(0).energy, ONE) //

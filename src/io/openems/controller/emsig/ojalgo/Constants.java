@@ -13,11 +13,11 @@ public class Constants {
 	public final static int GRID_SELL_LIMIT = 30000; // [W]
 	public final static int GRID_BUY_LIMIT = 30000; // [W]
 
-	public final static int ESS_INITIAL_ENERGY = 25000; // [Wh] //
+	public final static int ESS_INITIAL_ENERGY = 500; // [Wh] //
 	public final static int ESS_MIN_ENERGY = 0; // [Wh]
 	public final static int ESS_MAX_ENERGY = 44000; // [Wh] Fems4: 44000 Fems2541: ?
 	public final static int ESS_MAX_CHARGE = 10000; // [W]
-	public final static int ESS_MAX_CHARGE_DIFFERENCE = 2500; // [W]
+	public final static int ESS_MAX_CHARGE_DIFFERENCE = ESS_MAX_CHARGE*25/100; // [W]
 	public final static int ESS_MAX_DISCHARGE = 10000; // [W]
 	public final static int ESS_CHARGE_EFFICIENCY = 95; // [%, 0-100] 
 	public final static int ESS_DISCHARGE_EFFICIENCY = 105; // [%, 100-200] 
@@ -28,8 +28,8 @@ public class Constants {
 	// available time for charging, minimum and maximum required energy to be
 	// charged (add variables), potentially hardware-specific charging limitations,
 	// and a charging command
-	public final static int EV_INITIAL_ENERGY = 12000; // [Wh] 
-	public final static int EV_MAX_ENERGY = 25000; // [Wh] Tesla 3: 50 - 75 kWh
+	public final static int EV_INITIAL_ENERGY = 10000; // [Wh] 
+	public final static int EV_MAX_ENERGY = 30000; // [Wh] Tesla 3: 50 - 75 kWh
 	public final static int EV_REQUIRED_ENERGY = 16000; // [Wh] 
 	public final static int EV_MIN_CHARGE = 4200; // [W] (3 phase)
 	public final static int EV_MAX_CHARGE = 8000; // [W] Hardy Barth cpm 2 or Keba 4: 11000 (3 phase)
@@ -97,8 +97,8 @@ public class Constants {
 //			0, 0, 0, 0, //1, 1, 1, 1, 
 //			0, 0, 0, 0, //1, 1, 1, 1, 
 //			0, 0, 0, 0, //1, 1, 1, 1, 
-//			0, 0, 0, 0, //1, 1, 1, 0, 
-//			1, 1, 1, 1, 
+//			0, 0, 0, 0, //1, 1, 1, 0, ...
+//			1, 1, 1, 1,
 //			1, 1, 1, 1,
 //			1, 1, 1, 1,
 //			1, 1, 1, 1,
@@ -188,8 +188,8 @@ public class Constants {
 //			0, 0, 0, 0,
 //			0, 0, 0, 0 
 //			};
-	
-//	// Fems4, 22.07.2021 (54% --> 69% SoC)
+//	
+////	// Fems4, 22.07.2021 (54% --> 69% SoC)
 //	public final static int[] HH_LOAD = {
 //			2743, 2654, 2693, 2707,
 //			2623, 2642, 2699, 2670,
