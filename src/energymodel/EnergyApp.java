@@ -34,6 +34,11 @@ import static io.openems.controller.emsig.ojalgo.Constants.EV_INITIAL_ENERGY;
 import static io.openems.controller.emsig.ojalgo.Constants.EV_MAX_ENERGY;
 import static io.openems.controller.emsig.ojalgo.Constants.EV_REQUIRED_ENERGY;
 import static io.openems.controller.emsig.ojalgo.Constants.PV_POWER;
+import static io.openems.controller.emsig.ojalgo.Constants.ESS_CHARGE_EFFICIENCY;
+import static io.openems.controller.emsig.ojalgo.Constants.ESS_DISCHARGE_EFFICIENCY;
+import static io.openems.controller.emsig.ojalgo.Constants.EV_CHARGE_EFFICIENCY;
+
+
 
 public class EnergyApp {
 
@@ -256,50 +261,56 @@ public class EnergyApp {
 		}
 		// Impose schedule constraints for the ess
 		// depending on ESS_INITIAL_ENERGY, pvPowerSum, hhLoadSum, and endOfDayLoad
-//		if (ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60) {
+//		if (ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60) {
 //			em.model.addExpression("ESS_Schedule_Expr") //
 //					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-//					.lower(Math.min(ESS_MAX_ENERGY*60*85/100,  Math.max(0,ESS_MAX_ENERGY*60*90/100 + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
-//		} else if (ESS_MAX_ENERGY*60 > ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60*75/100) {
+//					.lower(Math.min(ESS_MAX_ENERGY*60*85/100,  Math.max(0,ESS_MAX_ENERGY*60*90/100 + endOfDayLoad*MINUTES_PER_PERIOD*(ESS_DISCHARGE_EFFICIENCY + 10)/100)));
+//		} else if (ESS_MAX_ENERGY*60 > ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD 
+//			&& ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60*75/100) {
 //			em.model.addExpression("ESS_Schedule_Expr") //
 //					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-//					.lower(Math.min(ESS_MAX_ENERGY*60*75/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
-//		} else if (ESS_MAX_ENERGY*60*75/100 > ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60*50/100) {
+//					.lower(Math.min(ESS_MAX_ENERGY*60*75/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD + endOfDayLoad*MINUTES_PER_PERIOD*(ESS_DISCHARGE_EFFICIENCY + 10)/100)));
+//		} else if (ESS_MAX_ENERGY*60*75/100 > ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD
+//			&& ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60*50/100) {
 //			em.model.addExpression("ESS_Schedule_Expr") //
 //			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-//			.lower(Math.min(ESS_MAX_ENERGY*60*50/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
-//		} else if (ESS_MAX_ENERGY*60*50/100 > ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60*25/100) {
+//			.lower(Math.min(ESS_MAX_ENERGY*60*50/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD + endOfDayLoad*MINUTES_PER_PERIOD*(ESS_DISCHARGE_EFFICIENCY + 10)/100)));
+//		} else if (ESS_MAX_ENERGY*60*50/100 > ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD 
+//			&& ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD >= ESS_MAX_ENERGY*60*25/100) {
 //			em.model.addExpression("ESS_Schedule_Expr") //
 //			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-//			.lower(Math.min(ESS_MAX_ENERGY*60*25/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD + endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
+//			.lower(Math.min(ESS_MAX_ENERGY*60*25/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD + endOfDayLoad*MINUTES_PER_PERIOD*(ESS_DISCHARGE_EFFICIENCY + 10)/100)));
 //		} else {
 //			em.model.addExpression("ESS_Schedule_Expr") //
 //			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-//			.lower(Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD + endOfDayLoad*MINUTES_PER_PERIOD*1.1));
+//			.lower(Math.max(0, ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD + endOfDayLoad*MINUTES_PER_PERIOD*(ESS_DISCHARGE_EFFICIENCY + 10)/100));
 //		}
 		
 		
 		// If we add an EV to the model
-		if (ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 >= ESS_MAX_ENERGY*60) {
+		if (ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*ESS_DISCHARGE_EFFICIENCY/EV_CHARGE_EFFICIENCY >= ESS_MAX_ENERGY*60) {
 			em.model.addExpression("ESS_Schedule_Expr") //
 					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-					.lower(Math.min(ESS_MAX_ENERGY*60*80/100,  Math.max(0, ESS_MAX_ENERGY*60*90/100 + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*1.1) - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1)));
-		} else if (ESS_MAX_ENERGY*60 >= ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60  && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60  >= ESS_MAX_ENERGY*60*75/100) {
+					.lower(Math.min(ESS_MAX_ENERGY*60*80/100,  Math.max(0, ESS_MAX_ENERGY*60*90/100 + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*(ESS_DISCHARGE_EFFICIENCY + 10)/100) - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*ESS_DISCHARGE_EFFICIENCY/EV_CHARGE_EFFICIENCY)));
+		} else if (ESS_MAX_ENERGY*60 >= ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*ESS_DISCHARGE_EFFICIENCY/EV_CHARGE_EFFICIENCY  
+					&& ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*ESS_DISCHARGE_EFFICIENCY/EV_CHARGE_EFFICIENCY  >= ESS_MAX_ENERGY*60*75/100) {
 			em.model.addExpression("ESS_Schedule_Expr") //
 					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-					.lower(Math.min(ESS_MAX_ENERGY*60*60/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*1.1))));
-		} else if (ESS_MAX_ENERGY*60*75/100 >= ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 >= ESS_MAX_ENERGY*60*50/100) {
+					.lower(Math.min(ESS_MAX_ENERGY*60*60/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*ESS_DISCHARGE_EFFICIENCY/EV_CHARGE_EFFICIENCY + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*(ESS_DISCHARGE_EFFICIENCY + 10)/100))));
+		} else if (ESS_MAX_ENERGY*60*75/100 >= ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*ESS_DISCHARGE_EFFICIENCY/EV_CHARGE_EFFICIENCY
+					&& ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*ESS_DISCHARGE_EFFICIENCY/EV_CHARGE_EFFICIENCY >= ESS_MAX_ENERGY*60*50/100) {
 			em.model.addExpression("ESS_Schedule_Expr") //
-			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-			.lower(Math.min(ESS_MAX_ENERGY*60*40/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*1.1))));
-		} else if (ESS_MAX_ENERGY*60*50/100 >= ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 && ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60 >= ESS_MAX_ENERGY*60*25/100) {
+					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+					.lower(Math.min(ESS_MAX_ENERGY*60*40/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*ESS_DISCHARGE_EFFICIENCY/EV_CHARGE_EFFICIENCY + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*(ESS_DISCHARGE_EFFICIENCY + 10)/100))));
+		} else if (ESS_MAX_ENERGY*60*50/100 >= ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*ESS_DISCHARGE_EFFICIENCY/EV_CHARGE_EFFICIENCY 
+					&& ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*ESS_DISCHARGE_EFFICIENCY/EV_CHARGE_EFFICIENCY >= ESS_MAX_ENERGY*60*25/100) {
 			em.model.addExpression("ESS_Schedule_Expr") //
-			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-			.lower(Math.min(ESS_MAX_ENERGY*60*20/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*1.1))));
+					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+					.lower(Math.min(ESS_MAX_ENERGY*60*20/100, Math.max(0, ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*ESS_DISCHARGE_EFFICIENCY/EV_CHARGE_EFFICIENCY + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*(ESS_DISCHARGE_EFFICIENCY + 10)/100))));
 		} else {
 			em.model.addExpression("ESS_Schedule_Expr") //
-			.set(em.periods[em.periods.length -1].ess.energy, ONE) //
-			.lower(Math.max(0, ESS_INITIAL_ENERGY*60 + (pvPowerSum - hhLoadSum)*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*1.1 + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*1.1)));
+					.set(em.periods[em.periods.length -1].ess.energy, ONE) //
+					.lower(Math.max(0, ESS_INITIAL_ENERGY*60 + (Math.min( (pvPowerSum - hhLoadSum)*ESS_CHARGE_EFFICIENCY/100, (pvPowerSum - hhLoadSum)*ESS_DISCHARGE_EFFICIENCY/100))*MINUTES_PER_PERIOD - (EV_MAX_ENERGY - EV_INITIAL_ENERGY)*60*ESS_DISCHARGE_EFFICIENCY/EV_CHARGE_EFFICIENCY + Math.min(0,endOfDayLoad*MINUTES_PER_PERIOD*(ESS_DISCHARGE_EFFICIENCY + 10)/100)));
 		}
 		
 		
