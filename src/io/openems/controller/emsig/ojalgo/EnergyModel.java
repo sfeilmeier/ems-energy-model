@@ -94,7 +94,8 @@ public class EnergyModel {
 				break;
 			}
 		}
-				
+		
+		
 		// If the EV is only available while PV_POWER >= HH_LOAD, and if
 		// the ESS will not be fully charged "in time", then it will happen that
 		// the ESS is charged with PV power while most of the power used to serve
@@ -330,7 +331,7 @@ public class EnergyModel {
 			model.addExpression(p.name + "_Power_Balance") //
 					.set(p.ess.power, ONE) //
 					.set(p.grid.power, ONE) //
-					.set(p.ev.charge.power, ONE.negate()) //
+				.set(p.ev.charge.power, ONE.negate()) //
 //					.set(p.evs.get(0).charge.power, ONE.negate()) //
 //					.set(p.evs.get(1).charge.power, ONE.negate()) //
 					.level(p.hh.power.cons - p.pv.power.prod);
@@ -349,7 +350,7 @@ public class EnergyModel {
 					.level(0);
 				
 			
-			// Conditions to check whether for the present period, the additional 
+			// Condition to check whether for the present period, the additional 
 			// ess constraint is imposed or not
 			if (evPotentialEnergy >= EV_MAX_ENERGY*60) {
 			if (essPotentialEnergyIndex >= 0) {
