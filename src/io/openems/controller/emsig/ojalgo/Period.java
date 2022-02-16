@@ -21,7 +21,7 @@ public class Period {
 
 		// Period of the day
 		final int minute = thisIndex * lengthInMinutes;
-		b.append(String.format("%02d", minute / 60)); 
+		b.append(String.format("%02d", minute / 60));
 		b.append(":");
 		b.append(String.format("%02d", minute % 60));
 		return new Period(b.toString());
@@ -33,16 +33,14 @@ public class Period {
 	public final PV pv = new PV();
 	public final HouseHold hh = new HouseHold();
 	public final EV ev = new EV();
-	
+
 	// If we want to have multiple EVs
 //	public final EV ev1 = new EV();
 //	public final EV ev2 = new EV();
 	public final List<EV> evs = new ArrayList<EV>();
-	
+
 	// If we want to have multiple PVs
 	public final List<PV> pvs = new ArrayList<PV>();
-
-
 
 	private Period(String name) {
 		this.name = name;

@@ -14,7 +14,7 @@ public class EnergyStorage {
 
 	public final Charge charge = new Charge();
 	public final Discharge discharge = new Discharge();
-	
+
 	public Variable isCharged;
 	public Variable power = null;
 	public Variable energy = null;
@@ -23,5 +23,3 @@ public class EnergyStorage {
 	}
 
 }
-
-

@@ -12,8 +12,8 @@ public class EnergyGrid {
 	public static class Sell {
 		public Variable power = null;
 		public double revenue;
-		
-		//In case of 2 PVs
+
+		// In case of 2 PVs
 //		public double[] revenue = new double[2];
 	}
 
