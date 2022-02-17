@@ -67,11 +67,11 @@ public class EnergyModel {
 		// TODO In the future, one shall add an additional objective function
 		// that makes sure that charging is prioritized over selling to the grid
 
-		// Find first index such that the potential ess energy exceeds
+		// Find first index such that the potential ESS energy exceeds
 		// the max energy; for all periods smaller than said index
-		// impose a new ess charging constraint (prioritization)
+		// impose a new ESS charging constraint (prioritization)
 		// Note: the present approach does not yield
-		// the actual potential ess energy;
+		// the actual potential ESS energy;
 		// A priori, we do not know how much energy is really used to
 		// serve the load, and we have charging limitations and efficiencies
 		// However, it is a reasonable guiding principle and yields
@@ -124,7 +124,7 @@ public class EnergyModel {
 			Period p = Period.from(i, periods.length, MINUTES_PER_PERIOD);
 			periods[i] = p;
 
-			// specify the PV power and the HH load for each period
+			// Specify the PV power and the HH load for each period
 			p.pv.power.prod = PV_POWER[i];
 			p.hh.power.cons = HH_LOAD[i];
 			p.ev.isAvail = EV_AVAIL[i];
@@ -145,13 +145,12 @@ public class EnergyModel {
 			/*
 			 * Energy Storage
 			 */
-			// upper and lower bounds for charge and discharge
+			// Upper and lower bounds for charge and discharge
 			// Upper bound for charge is given by the minimum
 			// of ESS_MAX_CHARGE and p.power.prod for each period p.
 			// This way, the ESS is not charged with power bought
-			// from the grid (at least in the evening and in the morning).
+			// from the grid
 			// 0 = ess.power - ess.discharge.power + ess.charge.power
-
 			p.ess.power = model.addVariable("ESS_" + p.name + "_Power") //
 					.lower(ESS_MAX_CHARGE * -1) //
 					.upper(ESS_MAX_DISCHARGE);
@@ -168,16 +167,20 @@ public class EnergyModel {
 					.set(p.ess.charge.power, ONE) //
 					.level(0);
 
-			// within a period, only charging XOR discharging is allowed
+			// Within a period, only charging XOR discharging is allowed
 //			if (p.pv.power.prod > p.hh.power.cons) {
 			if (p.pv.power.prod > 750) {
 				p.ess.isCharged = model.addVariable("ESS_" + p.name + "_Charge_Mode") //
 						.binary();
+				// 0 <= p.ess.discharge.power + p.ess.isCharged * ESS_MAX_DISCHARGE <=
+				// ESS_MAX_DISCHARGE
 				model.addExpression("ESS_" + p.name + "_Charge_Mode_Expr") //
 						.set(p.ess.isCharged, ESS_MAX_DISCHARGE) //
 						.set(p.ess.discharge.power, ONE) //
 						.lower(0) //
 						.upper(ESS_MAX_DISCHARGE);
+				// 0 <= p.ess.isCharged * ESS_MAX_DISCHARGE - p.ess.charge.power <=
+				// ESS_MAX_DISCHARGE
 				model.addExpression("ESS_" + p.name + "_Charge_Mode2_Expr") //
 						.set(p.ess.isCharged, ESS_MAX_CHARGE) //
 						.set(p.ess.charge.power, ONE.negate()) //
@@ -185,15 +188,17 @@ public class EnergyModel {
 						.upper(ESS_MAX_CHARGE);
 			}
 
-			// sum energy
-			// take the charge and discharge efficiency of the ESS into account
-			// by doing so, it is less likely that the ESS both charges and discharges
-			// within a period, but it is not impossible
+			// Sum Energy
+			// Take the charge and discharge efficiencies of the ESS into account
+			// By doing so, it is less likely that the ESS both charges and discharges
+			// within the same period, but it is not inhibited
 			p.ess.energy = model.addVariable("ESS_" + p.name + "_Energy") //
 					.lower(ESS_MIN_ENERGY * 60 /* [Wmin] */) //
 					.upper(ESS_MAX_ENERGY * 60 /* [Wmin] */);
-			// periods[0].ess.energy = ESS_INITIAL_ENERGY *60 -
-			// period[0].ess.power*MINUTES_PER_PERIOD*ESS_EFFICIENCY
+			// periods[0].ess.energy = ESS_INITIAL_ENERGY * 60
+			// - period[0].ess.discharge.power * MINUTES_PER_PERIOD *
+			// ESS_DISCHARGE_EFFICIENCY
+			// + period[0].ess.charge.power * MINUTES_PER_PERIOD * ESS_CHARGE_EFFICIENCY
 			if (i == 0) {
 				model.addExpression("ESS_" + p.name + "_Energy_Expr_1st") //
 						.set(p.ess.energy, ONE) //
@@ -202,6 +207,10 @@ public class EnergyModel {
 						.set(p.ess.discharge.power, MINUTES_PER_PERIOD * ESS_DISCHARGE_EFFICIENCY / 100) //
 						.level(ESS_INITIAL_ENERGY * 60); //
 			} else {
+				// periods[i].ess.energy = periods[i-1].ess.energy
+				// - period[0].ess.discharge.power * MINUTES_PER_PERIOD *
+				// ESS_DISCHARGE_EFFICIENCY
+				// + period[0].ess.charge.power * MINUTES_PER_PERIOD * ESS_CHARGE_EFFICIENCY
 				model.addExpression("ESS_" + p.name + "_Energy_Expr") //
 						.set(periods[i - 1].ess.energy, ONE) //
 						.set(p.ess.discharge.power, MINUTES_PER_PERIOD * -1 * ESS_DISCHARGE_EFFICIENCY / 100) //
@@ -218,33 +227,39 @@ public class EnergyModel {
 			// EV power and EV mode
 			// If the EV is not available, isCharged = 1, chargePower = 0
 			// Either allow no charge power (if isCharged = 1) or allow
-			// a charge power in [EV_MIN_CHARGE, EV_MAX_CHARGE]
+			// a charge power in [EV_MIN_CHARGE, EV_MAX_CHARGE] (if isCharged = 0)
 			p.ev.charge.power = model.addVariable("EV_" + p.name + "_Charge_Power") //
 					.lower(0) //
 					.upper(EV_MAX_CHARGE);
 			p.ev.isCharged = model.addVariable("EV_" + p.name + "_Charge_Mode") //
 					.binary();
+			// p.ev.isCharged + p.ev.isAvail >= 1
+			// This guarantees that the EV is not charged whenever it is not plugged
 			model.addExpression("EV_" + p.name + "_Charge_Decision_Expr") //
 					.set(p.ev.isCharged, ONE) //
 					.lower(1 - p.ev.isAvail);
+			// EV_MIN_CHARGE <= p.ev.isCharged * EV_MAX_CHARGE + p.ev.charge.power <=
+			// EV_MAX_CHARGE
 			model.addExpression("EV_" + p.name + "_Charge_Power_Expr") //
 					.set(p.ev.isCharged, EV_MAX_CHARGE) //
 					.set(p.ev.charge.power, ONE) //
 					.lower(EV_MIN_CHARGE) //
 					.upper(EV_MAX_CHARGE);
 
-			// EV energy
-			// p.ev.energy = p.ev.charge.power*MINUTES_PER_PERIODS
-			// In particular, assume a minimum EV charge power of 100
+			// EV Energy
 			p.ev.energy = model.addVariable("EV_" + p.name + "Energy") //
 					.lower(0) //
 					.upper(EV_MAX_ENERGY * 60); // [Wmin]
 			if (i == 0) {
+				// periods[0].ev.energy = EV_INITIAL_ENERGY * 60
+				// + periods[0].ev.charge.power * MINUTES_PER_PERIOD * EV_CHARGE_EFFICIENCY
 				model.addExpression(p.name + "_EV_Energy_Expr") //
 						.set(p.ev.energy, ONE) //
 						.set(p.ev.charge.power, -1 * MINUTES_PER_PERIOD * EV_CHARGE_EFFICIENCY / 100) //
 						.level(EV_INITIAL_ENERGY * 60);
 			} else {
+				// periods[i].ev.energy = periods[i-1].ev.energy
+				// + periods[i].ev.charge.power * MINUTES_PER_PERIOD * EV_CHARGE_EFFICIENCY
 				model.addExpression(p.name + "_EV_Energy_Expr") //
 						.set(p.ev.energy, ONE.negate()) //
 						.set(p.ev.charge.power, MINUTES_PER_PERIOD * EV_CHARGE_EFFICIENCY / 100) //
@@ -252,10 +267,10 @@ public class EnergyModel {
 						.level(0);
 			}
 
-//		// In case of multiple EVs
-//		// TODO currently 2, but this has to be generalized eventually
+			// In case of multiple EVs
+			// TODO currently 2, but this has to be generalized eventually
 			// Defining the EVs ''by hand'' only makes sense if their
-			// technical specifications differ (max energey, min charge, max charge, ...)
+			// technical specifications differ (max energy, min charge, max charge, ...)
 //			final EV ev0 = new EV();
 //			final EV ev1 = new EV();
 //			p.evs.add(ev0);
@@ -270,15 +285,15 @@ public class EnergyModel {
 //					.binary();
 //			p.evs.get(1).isCharged = model.addVariable("EV1_" + p.name + "_Charge_Mode") //
 //					.binary();
-//			
+//
 //			model.addExpression("EV0_" + p.name + "_Charge_Decision_Expr") //
-// 					.set(p.evs.get(0).isCharged, ONE) //
-// 					.lower(1 - p.evs.get(0).isAvail);
+//					.set(p.evs.get(0).isCharged, ONE) //
+//					.lower(1 - p.evs.get(0).isAvail);
 //			model.addExpression("EV0_" + p.name + "_Charge_Power_Expr") //
-// 					.set(p.evs.get(0).isCharged, EV_MAX_CHARGE) //
-// 					.set(p.evs.get(0).charge.power, ONE) //
-// 					.lower(EV_MIN_CHARGE) //
-// 					.upper(EV_MAX_CHARGE);
+//					.set(p.evs.get(0).isCharged, EV_MAX_CHARGE) //
+//					.set(p.evs.get(0).charge.power, ONE) //
+//					.lower(EV_MIN_CHARGE) //
+//					.upper(EV_MAX_CHARGE);
 //			model.addExpression("EV1_" + p.name + "_Charge_Decision_Expr") //
 //					.set(p.evs.get(1).isCharged, ONE) //
 //					.lower(1 - p.evs.get(1).isAvail);
@@ -287,44 +302,44 @@ public class EnergyModel {
 //					.set(p.evs.get(1).charge.power, ONE) //
 //					.lower(EV_MIN_CHARGE) //
 //					.upper(EV_MAX_CHARGE);
-//			
+//
 //			p.evs.get(0).energy = model.addVariable("EV0_" + p.name + "Energy") //
 //					.lower(0) //
 //					.upper(EV_MAX_ENERGY * 60); // [Wmin]
 //			if (i == 0) {
-//			model.addExpression(p.name + "_EV0_Energy_Expr") //
-//				.set(p.evs.get(0).energy, ONE) //
-//				.set(p.evs.get(0).charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-//				.level(EV_INITIAL_ENERGY *60);
+//				model.addExpression(p.name + "_EV0_Energy_Expr") //
+//						.set(p.evs.get(0).energy, ONE) //
+//						.set(p.evs.get(0).charge.power, -1 * MINUTES_PER_PERIOD * EV_CHARGE_EFFICIENCY / 100) //
+//						.level(EV_INITIAL_ENERGY * 60);
 //			} else {
 //				model.addExpression(p.name + "_EV0_Energy_Expr") //
-//				.set(p.evs.get(0).energy, ONE.negate()) //
-//				.set(p.evs.get(0).charge.power, MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-//				.set(periods[i-1].evs.get(0).energy, ONE) //
-//				.level(0);
+//						.set(p.evs.get(0).energy, ONE.negate()) //
+//						.set(p.evs.get(0).charge.power, MINUTES_PER_PERIOD * EV_CHARGE_EFFICIENCY / 100) //
+//						.set(periods[i - 1].evs.get(0).energy, ONE) //
+//						.level(0);
 //			}
 //			p.evs.get(1).energy = model.addVariable("EV1_" + p.name + "Energy") //
 //					.lower(0) //
 //					.upper(EV_MAX_ENERGY * 60); // [Wmin]
 //			if (i == 0) {
-//			model.addExpression(p.name + "_EV1_Energy_Expr") //
-//				.set(p.evs.get(1).energy, ONE) //
-//				.set(p.evs.get(1).charge.power, -1* MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-//				.level(EV_INITIAL_ENERGY *60);
+//				model.addExpression(p.name + "_EV1_Energy_Expr") //
+//						.set(p.evs.get(1).energy, ONE) //
+//						.set(p.evs.get(1).charge.power, -1 * MINUTES_PER_PERIOD * EV_CHARGE_EFFICIENCY / 100) //
+//						.level(EV_INITIAL_ENERGY * 60);
 //			} else {
 //				model.addExpression(p.name + "_EV1_Energy_Expr") //
-//				.set(p.evs.get(1).energy, ONE.negate()) //
-//				.set(p.evs.get(1).charge.power, MINUTES_PER_PERIOD*EV_CHARGE_EFFICIENCY/100) //
-//				.set(periods[i-1].evs.get(1).energy, ONE) //
-//				.level(0);
+//						.set(p.evs.get(1).energy, ONE.negate()) //
+//						.set(p.evs.get(1).charge.power, MINUTES_PER_PERIOD * EV_CHARGE_EFFICIENCY / 100) //
+//						.set(periods[i - 1].evs.get(1).energy, ONE) //
+//						.level(0);
 //			}
 
 			/*
 			 * Grid
 			 */
-			// p.hh.power.cons - p.pv.power.prod = p.ess.power + p.grid.power -
-			// p.ev.power(s)
-			// 0 = p.grid.power - grid.buy.power + p.grid.sell.power
+			// Power Balance Equation:
+			// p.hh.power.cons - p.pv.power.prod = p.ess.power + p.grid.power - p.ev.power(s)
+			// p.grid.power =  grid.buy.power - p.grid.sell.power
 			p.grid.power = model.addVariable("Grid_" + p.name + "_Power"); //
 			model.addExpression(p.name + "_Power_Balance") //
 					.set(p.ess.power, ONE) //
@@ -348,7 +363,8 @@ public class EnergyModel {
 					.level(0);
 
 			// Conditions to check whether for the present period, the additional
-			// ess constraint (charge prioritization) is imposed or not
+			// ESS constraint (charge prioritization) is imposed or not
+			// The conditions that need to be checked here have been explained above
 			if (evPotentialEnergy >= EV_MAX_ENERGY * 60) {
 				if (essPotentialEnergyIndex >= 0) {
 					if (i <= essPotentialEnergyIndex) {
@@ -373,9 +389,9 @@ public class EnergyModel {
 				}
 			} else {
 				// Evenly distributed charging
-				// In general, this constraint cannot be imposed for all periods, as it might 
-				// interfere with the constraint charge prioritization and potentially 
-				// leading to infeasibility of the modelled program
+				// In general, this constraint cannot be imposed for all periods, as it might
+				// interfere with the constraint for charge prioritization, potentially
+				// leading to infeasibility of the modeled program
 				if (i >= 1) {
 					model.addExpression(p.name + "_Charge_Diff_Max_Expr") //
 							.set(periods[i].ess.charge.power, ONE) //
@@ -385,9 +401,9 @@ public class EnergyModel {
 				}
 			}
 
-			// Selling pv power and charging the ess with grid power can be
+			// Selling PV power and charging the ESS with grid power can be
 			// beneficial (whenever sell revenue exceeds buy cost)
-			// We only allow gridBuy XOR gridSell within a period
+			// This constraint allows gridBuy XOR gridSell within a period
 			// Alternatively (and for the sake of better runtime), add a fixed and
 			// suitable value to p.grid.buy.cost to avoid the mentioned scenario
 //			p.grid.isBuy = model.addVariable("Grid_" + p.name + "_isBuy") //
@@ -403,7 +419,7 @@ public class EnergyModel {
 //					.lower(0) //
 //					.upper(GRID_SELL_LIMIT);
 
-			// We do not allow gridBuy while the EV is charged
+			// Do not allow gridBuy while the EV is charged
 			// In general, this should not be taken to be a constraint
 			// It is rather a byproduct of the optimization
 //			p.grid.isBuy = model.addVariable("Grid_" + p.name + "_isBuy") //

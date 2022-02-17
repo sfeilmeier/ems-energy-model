@@ -81,7 +81,7 @@ public class EnergyApp {
 //			// Add Schedule-Constraints
 //			addScheduleConstraints(em);
 //
-//			// Target function
+//			// objective function
 //			em.model.addExpression("Extreme Grid Power") //
 //					.set(em.periods[i].grid.power, ONE) //
 //					.weight(ONE);
@@ -194,7 +194,7 @@ public class EnergyApp {
 //		}
 //		;
 //
-//		// To BOUND this target function by the square of the maximum charge difference
+//		// To BOUND this objective function by the square of the maximum charge difference
 //		// use .weight(1/Math.sqrt(NO_OF_PERIODS -1)).
 //		Expression evenlyDistributedCharge = em.model.addExpression("Evenly Distributed Charge");
 //		evenlyDistributedCharge.setQuadraticFactors(charDiffs, identity);
@@ -229,10 +229,10 @@ public class EnergyApp {
 //				.lower(ESS_MAX_ENERGY * 60 *y/100); // in Wmin
 //		}	
 
-		// Find first index where pv power permanently
-		// undercuts hhload and summarize the power differences
+		// Find first index where PV power permanently
+		// undercuts HH load and summarize the power differences
 		// starting at this index
-		// This is important for the ess schedule constraint
+		// This is important for the ESS schedule constraint
 		int hhMoreThanpvIndex = 0;
 		for (int j = em.periods.length - 1; j >= 0; j--) {
 			if (em.periods[j].pv.power.prod >= em.periods[j].hh.power.cons) {
@@ -255,7 +255,7 @@ public class EnergyApp {
 		// With the present specifications, the model is prone to
 		// provide maximal energy autarchy of the EMS
 		// TODO In the future, one shall add an additional objective function
-		// that makes sure that the ess has a "reasonable" SoC at the end of
+		// that makes sure that the ESS has a "reasonable" SoC at the end of
 		// the day
 		int pvPowerSum = 0;
 		int hhLoadSum = 0;
@@ -263,18 +263,18 @@ public class EnergyApp {
 			pvPowerSum += p.pv.power.prod;
 			hhLoadSum += p.hh.power.cons;
 		}
-		// Impose schedule constraints for the ess
+		// Impose schedule constraints for the ESS
 		// depending on ESS_INITIAL_ENERGY, pvPowerSum, hhLoadSum, and endOfDayLoad
 		// The precise values for boundaries and safety margins are chosen arbitrarily
-		// If pvPowerSum >= hhLoadSum, the ess is predominantly charged
-		// If pvPowerSum < hhLoadSum, the ess is predominantly discharged
+		// If pvPowerSum >= hhLoadSum, the ESS is predominantly charged
+		// If pvPowerSum < hhLoadSum, the ESS is predominantly discharged
 		// Depending on the scenario, we need to incorporate charge/discharge
 		// efficiencies into the schedule constraint
-		// Since endOfDayLoad may be served by the ess, we
+		// Since endOfDayLoad may be served by the ESS, we
 		// take the discharge efficiency (+ some safety margin) into account
 
-		// If the forecasted values are such that the ess is potentially fully charged,
-		// then we require the ess to be almost fully charged (including some safety
+		// If the forecasted values are such that the ESS is potentially fully charged,
+		// then we require the ESS to be almost fully charged (including some safety
 		// margins)
 //		if (ESS_INITIAL_ENERGY * 60 + (Math.min((pvPowerSum - hhLoadSum) * ESS_CHARGE_EFFICIENCY / 100,
 //				(pvPowerSum - hhLoadSum) * ESS_DISCHARGE_EFFICIENCY / 100)) * MINUTES_PER_PERIOD >= ESS_MAX_ENERGY
@@ -338,14 +338,14 @@ public class EnergyApp {
 
 		// If we add an EV to the model
 		// Take the energy the EV has to be charged with into account
-		// Again, in the "worst" case, the EV is charged with ess energy,
-		// so that one has to incorporate both the ess discharge efficiency
-		// and the ev charge efficiency into the schedule constraints
+		// Again, in the "worst" case, the EV is charged with ESS energy,
+		// so that one has to incorporate both the ESS discharge efficiency
+		// and the EV charge efficiency into the schedule constraints
 		// The remaining values and conditions are the same as for the
 		// model without any EVs
 
-		// If the forecasted values are such that the ess is potentially fully charged,
-		// then we require the ess to be almost fully charged (including some safety
+		// If the forecasted values are such that the ESS is potentially fully charged,
+		// then we require the ESS to be almost fully charged (including some safety
 		// margins)
 		if (ESS_INITIAL_ENERGY * 60
 				+ (Math.min((pvPowerSum - hhLoadSum) * ESS_CHARGE_EFFICIENCY / 100,
