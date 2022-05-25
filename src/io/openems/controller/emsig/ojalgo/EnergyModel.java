@@ -38,6 +38,7 @@ import javax.swing.text.AttributeSet.ColorAttribute;
 
 import org.ojalgo.optimisation.ExpressionsBasedModel;
 import org.ojalgo.optimisation.Optimisation;
+import org.ojalgo.optimisation.integer.IntegerStrategy;
 import org.ojalgo.type.CalendarDateUnit;
 import org.ojalgo.type.context.NumberContext;
 
@@ -53,8 +54,9 @@ public class EnergyModel {
 	public EnergyModel() {
 //		model = new ExpressionsBasedModel();
 		var options = new Optimisation.Options();
-		options.mip_defer = 0.5; // default: 0.9
-		options.mip_gap = 1.0E-2; // default: 1.0E-6
+//      options.mip_defer = 0.5; // default: 0.9
+//      options.mip_gap = 1.0E-2; // default: 1.0E-6
+		options.integer(IntegerStrategy.DEFAULT.withGapTolerance(NumberContext.of(4)));
 //		options.feasibility = NumberContext.of(12, 8);  // default: NumberContext.of(12, 8)
 //		options.iterations_abort = Integer.MAX_VALUE
 //		options.solution = NumberContext.ofScale(14).withMode(RoundingMode.HALF_DOWN);
